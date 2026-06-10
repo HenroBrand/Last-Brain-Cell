@@ -1,0 +1,47 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700;900&family=JetBrains+Mono:wght@400;700;800&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Space Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+}
+
+@layer utilities {
+  .shadow-retro {
+    border: 4px solid #000000;
+    box-shadow: 6px 6px 0px 0px #000000;
+  }
+  
+  .shadow-retro-heavy {
+    border: 6px solid #000000;
+    box-shadow: 12px 12px 0px 0px #000000;
+  }
+
+  .shadow-retro-sm {
+    border: 3px solid #000000;
+    box-shadow: 4px 4px 0px 0px #000000;
+  }
+
+  .shadow-retro-inset {
+    box-shadow: inset 4px 4px 0px 0px #000000;
+  }
+}
+
+@keyframes pulse-gentle {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.08); }
+}
+
+@keyframes float-gentle {
+  0% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-15px) rotate(5deg); }
+  100% { transform: translateY(0px) rotate(0deg); }
+}
+
+.animate-pulse-timer {
+  animation: pulse-gentle 0.8s infinite alternate ease-in-out;
+}
+
+.animate-float-cell {
+  animation: float-gentle 6s infinite ease-in-out;
+}

@@ -1,0 +1,6 @@
+{
+  "name": "Last Brain Cell",
+  "description": "An absurd comedy party game for 3-5 players playing together online using room codes. Challenge your friends to solve impossible situaciones and vote on who has the last brain cell left.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
