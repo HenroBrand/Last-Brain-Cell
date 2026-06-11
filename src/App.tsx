@@ -180,12 +180,12 @@ export default function App() {
   };
 
   // Create game lobby
-  const handleCreateRoom = async (playerName: string, avatar: string, isSpectator: boolean, language: 'EN' | 'AF') => {
+  const handleCreateRoom = async (playerName: string, avatar: string, isSpectator: boolean) => {
     try {
       const res = await fetch(`${API}/api/room/create`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ playerName, avatar, isSpectator, language })
+        body: JSON.stringify({ playerName, avatar, isSpectator, language: 'EN' })
       });
       const data = await res.json();
       if (!res.ok) {
@@ -236,9 +236,6 @@ export default function App() {
   const handleTransferHost = (targetPlayerId: string) => {
     triggerAction("TRANSFER_HOST", { targetPlayerId });
   };
-  const handleSetLanguage = (language: 'EN' | 'AF') => {
-    triggerAction("SET_LANGUAGE", { language });
-  };
 
   // Player triggers
   const handleSubmitAnswer = (answer: string) => {
@@ -279,9 +276,7 @@ export default function App() {
             player={player}
             onStartGame={handleStartGame}
             onTransferHost={handleTransferHost}
-            onSetLanguage={handleSetLanguage}
             errorMsg={errorMsg}
-            language={roomState.language}
           />
         );
 
@@ -331,7 +326,6 @@ export default function App() {
             onSubmit={handleSubmitAnswer}
             hasSubmitted={myRecord ? myRecord.hasSubmitted : false}
             isSpectator={myRecord ? myRecord.isSpectator : false}
-            language={roomState.language}
           />
         );
       }
@@ -344,7 +338,6 @@ export default function App() {
             player={player}
             onNextReveal={handleNextReveal}
             players={roomState.players}
-            language={roomState.language}
           />
         );
 
@@ -361,7 +354,6 @@ export default function App() {
             hasVoted={myRecordForVote ? myRecordForVote.votedFor !== null : false}
             onSendEmoji={handleSendEmoji}
             isSpectator={myRecordForVote ? myRecordForVote.isSpectator : false}
-            language={roomState.language}
           />
         );
       }
@@ -376,7 +368,6 @@ export default function App() {
             commentary={roomState.commentary}
             round={roomState.round}
             maxRounds={roomState.maxRounds}
-            language={roomState.language}
           />
         );
 
@@ -389,7 +380,6 @@ export default function App() {
             commentary={roomState.commentary}
             winnerId={roomState.winnerId}
             onRematch={handleRematch}
-            language={roomState.language}
           />
         );
 
@@ -425,7 +415,7 @@ export default function App() {
             id="leave-lobby-btn"
             className="flex items-center gap-1.5 text-xs bg-black text-rose-300 border-3 border-black rounded-xl px-3 py-1.5 font-black uppercase tracking-wider hover:text-rose-450 active:scale-95 transition pointer-events-auto cursor-pointer shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-y-0.5 hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]"
           >
-            <ArrowLeft className="w-4 h-4" /> {roomState?.language === 'AF' ? "VERLAAT KAMER" : "LEAVE ROOM"}
+            <ArrowLeft className="w-4 h-4" /> LEAVE ROOM
           </button>
         ) : (
           <div className="flex items-center gap-2 select-none">
@@ -437,7 +427,7 @@ export default function App() {
         <div className="flex items-center gap-3">
           {isPolling && (
             <span className="flex items-center gap-1.5 bg-black border-3 border-black text-[10px] font-black text-[#A3E635] px-3 py-1.5 rounded-xl select-none shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-              <span className="w-2.5 h-2.5 bg-[#A3E635] rounded-full animate-pulse border-2 border-black" /> {roomState?.language === 'AF' ? "REGSTREEKS" : "LIVE"}
+              <span className="w-2.5 h-2.5 bg-[#A3E635] rounded-full animate-pulse border-2 border-black" /> LIVE
             </span>
           )}
 
@@ -449,7 +439,7 @@ export default function App() {
             className="p-1 px-3 bg-black text-white hover:bg-zinc-950 border-3 border-black rounded-xl text-xs font-black transition flex items-center gap-1.5 cursor-pointer pointer-events-auto shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-y-0.5 hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]"
           >
             {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
-            {isMuted ? (roomState?.language === 'AF' ? "KLANK AAN" : "UNMUTE") : (roomState?.language === 'AF' ? "DEMP KLANK" : "MUTE AUDIO")}
+            {isMuted ? "UNMUTE" : "MUTE AUDIO"}
           </button>
         </div>
       </header>
@@ -458,8 +448,8 @@ export default function App() {
       {roomState && roomState.phase !== 'LOBBY' && roomState.phase !== 'END_GAME' && (
         <div className="w-full max-w-xl mx-auto px-4 mt-4 select-none relative z-30">
           <div className="flex justify-between items-center text-xs font-black uppercase text-yellow-300 mb-1">
-            <span>{roomState.language === 'AF' ? `Rondte ${roomState.round} van ${roomState.maxRounds}` : `Round ${roomState.round} of ${roomState.maxRounds}`}</span>
-            <span>{Math.round((roomState.round / roomState.maxRounds) * 100)}% {roomState.language === 'AF' ? "Voltooi" : "Complete"}</span>
+            <span>Round {roomState.round} of {roomState.maxRounds}</span>
+            <span>{Math.round((roomState.round / roomState.maxRounds) * 100)}% Complete</span>
           </div>
           <div className="w-full bg-black h-4 rounded-full border-3 border-black p-0.5 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
             <motion.div 
@@ -511,11 +501,11 @@ export default function App() {
         {/* Testing warning hint banner */}
         <div className="bg-cyan-950/40 border border-cyan-900/50 rounded-2xl p-2 px-3 text-cyan-300 font-bold text-[10px] uppercase tracking-wider flex items-center justify-center gap-1.5 max-w-md">
           <Info className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-          <span>{roomState?.language === 'AF' ? "Multispeler Wenk: Maak 'n incognito bladsy oop om maklik met 3 spelers te toets!" : "Multiplayer Tip: Open an incognito tab to easily test with 3 players!"}</span>
+          <span>Multiplayer Tip: Open an incognito tab to easily test with 3 players!</span>
         </div>
 
         <span className="font-mono text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">
-          Last Brain Cell © 2026 | Created by Henro Brand | Geskep deur Henro Brand
+          Last Brain Cell © 2026 | Created by Henro Brand
         </span>
       </footer>
 

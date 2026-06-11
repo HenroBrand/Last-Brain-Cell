@@ -15,7 +15,6 @@ interface RevealViewProps {
   player: { id: string; name: string; isHost: boolean };
   onNextReveal: () => void;
   players: Player[];
-  language?: 'EN' | 'AF';
 }
 
 export default function RevealView({
@@ -23,13 +22,10 @@ export default function RevealView({
   revealedAnswerIndex,
   player,
   onNextReveal,
-  players,
-  language = 'EN'
+  players
 }: RevealViewProps) {
   const currentAnswer = revealedAnswerIndex >= 0 ? answers[revealedAnswerIndex] : null;
   const isLast = revealedAnswerIndex >= answers.length - 1;
-
-  const isAf = language === 'AF';
 
   // Sound cues on new card flip
   useEffect(() => {
@@ -44,10 +40,7 @@ export default function RevealView({
       {/* Top Phase Ribbon */}
       <div className="bg-[#A78BFA] border-3 border-black rounded-lg py-1 px-4 text-xs font-black tracking-widest text-black mb-6 uppercase inline-flex items-center gap-1 shadow-[2px_2px_0_#000]">
         <Sparkles className="w-3.5 h-3.5" /> 
-        {isAf 
-          ? `SKEUR ANTWOORDE OOP (${revealedAnswerIndex + 1}/${answers.length})`
-          : `REVEALING ANSWERS (${revealedAnswerIndex + 1}/${answers.length})`
-        }
+        {`REVEALING ANSWERS (${revealedAnswerIndex + 1}/${answers.length})`}
       </div>
 
       <div className="w-full min-h-[40vh] flex flex-col items-center justify-center relative my-4">
@@ -62,27 +55,18 @@ export default function RevealView({
             >
               <div className="text-6xl animate-bounce">🙈</div>
               <h3 className="text-xl font-black uppercase tracking-wide">
-                {isAf ? "Gereed vir die rillings?" : "Ready for the cringe?"}
+                Ready for the cringe?
               </h3>
               <p className="text-xs text-stone-700 font-extrabold leading-relaxed">
-                {isAf
-                  ? "Spelers het hul antwoorde ingedien! Hulle is geskommel en anoniem gemaak. Geen stemme vir jouself nie. Bewapen jouself!"
-                  : "Players have submitted. The answers have been scrambled, blended, and rendered generic. Self-voting is banned. Prepare to judge!"
-                }
+                Players have submitted. The answers have been scrambled, blended, and rendered generic. Self-voting is banned. Prepare to judge!
               </p>
               {player.isHost ? (
                 <p className="text-xs text-[#6D28D9] font-black animate-pulse uppercase tracking-wide">
-                  {isAf 
-                    ? "Druk 'WYS EERSTE ANTWOORD' om die fees te begin!"
-                    : "Hit 'REVEAL FIRST ANSWER' to kick off the carousel!"
-                  }
+                  Hit 'REVEAL FIRST ANSWER' to kick off the carousel!
                 </p>
               ) : (
                 <p className="text-xs text-cyan-600 font-black animate-pulse uppercase tracking-wide">
-                  {isAf 
-                    ? "Ontsluiting van sinapse... wag tans vir die gasheer."
-                    : "Unlocking neural pathways... waiting for the host."
-                  }
+                  Unlocking neural pathways... waiting for the host.
                 </p>
               )}
             </motion.div>
@@ -97,7 +81,7 @@ export default function RevealView({
                 className="w-full bg-white text-black rounded-2xl p-7 border-6 border-black shadow-[12px_12px_0px_0px_#000000] flex flex-col justify-between items-center text-center gap-6 min-h-[300px]"
               >
                 <div className="bg-[#FDE047] text-black border-3 border-black font-black uppercase text-xs tracking-widest px-4 py-1.5 rounded-lg shadow-[3px_3px_0px_rgba(0,0,0,1)] select-none">
-                  {isAf ? "BREIN MONSTER" : "BRAIN SPECIMEN"} #{revealedAnswerIndex + 1}
+                  BRAIN SPECIMEN #{revealedAnswerIndex + 1}
                 </div>
 
                 <div className="flex-1 flex items-center justify-center">
@@ -107,7 +91,7 @@ export default function RevealView({
                 </div>
 
                 <div className="w-full border-t-4 border-black pt-4 text-xs text-black font-black uppercase tracking-wider">
-                  {isAf ? "Spesie Oorsprong: Anoniem" : "Origin Species: Anonymous"} 👽
+                  Origin Species: Anonymous 👽
                 </div>
               </motion.div>
             )
@@ -125,10 +109,10 @@ export default function RevealView({
           >
             <Eye className="w-5 h-5" /> 
             {revealedAnswerIndex === -1 
-              ? (isAf ? "WYS EERSTE ANTWOORD" : "REVEAL FIRST ANSWER") 
+              ? "REVEAL FIRST ANSWER" 
               : isLast 
-                ? (isAf ? "GAAN NA DIE STEM-ARENA" : "PROCEED TO VOTING") 
-                : (isAf ? "WYS VOLGENDE ANTWOORD" : "REVEAL NEXT ANSWER")
+                ? "PROCEED TO VOTING" 
+                : "REVEAL NEXT ANSWER"
             }
             <ChevronRight className="w-5 h-5 ml-1" />
           </button>
@@ -138,12 +122,9 @@ export default function RevealView({
       {/* Guest Status banner */}
       {!player.isHost && (
         <div className="mt-4 p-4 rounded-xl bg-black border-4 border-black text-center text-[#FBBF24] text-xs font-black max-w-sm flex flex-col gap-1 select-none shadow-retro-sm">
-          <span className="animate-pulse text-white font-black uppercase tracking-wider">{isAf ? "BEOORDELING IN VORDERING..." : "REVIEW IN PROGRESS..."}</span>
+          <span className="animate-pulse text-white font-black uppercase tracking-wider">REVIEW IN PROGRESS...</span>
           <span className="text-stone-300">
-            {isAf 
-              ? `Gasheer (${players.find(p => p.isHost)?.name || "die gasheer"}) hou die kaarte vas! Hou jou oë oop.`
-              : `(${players.find(p => p.isHost)?.name || "The Host"}) holds the cards. Gaze up at their feed or hold tight!`
-            }
+            {`(${players.find(p => p.isHost)?.name || "The Host"}) holds the cards. Gaze up at their feed or hold tight!`}
           </span>
         </div>
       )}

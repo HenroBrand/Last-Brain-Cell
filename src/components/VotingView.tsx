@@ -18,7 +18,6 @@ interface VotingViewProps {
   hasVoted: boolean;
   onSendEmoji: (emoji: string) => void;
   isSpectator?: boolean;
-  language?: 'EN' | 'AF';
 }
 
 const COLORS = [
@@ -39,12 +38,9 @@ export default function VotingView({
   onPostVote,
   hasVoted,
   onSendEmoji,
-  isSpectator = false,
-  language = 'EN'
+  isSpectator = false
 }: VotingViewProps) {
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
-
-  const isAf = language === 'AF';
 
   // sound alarms near countdown ending
   useEffect(() => {
@@ -71,7 +67,7 @@ export default function VotingView({
       <div className="bg-white rounded-xl p-4.5 border-4 border-black w-full flex items-center justify-between mb-6 shadow-retro text-black select-none">
         <span className="text-xs md:text-sm font-black text-black uppercase tracking-widest flex items-center gap-1.5 font-sans">
           <Clock className={`w-4 h-4 ${timerRemaining <= 5 ? "text-red-500 animate-bounce" : "text-black"}`} /> 
-          {isAf ? "KIES JOU FAVORITE BREIN-REKORD" : "CAST YOUR NEURAL VOTE"}
+          CAST YOUR NEURAL VOTE
         </span>
         <span className={`text-xl font-black w-12 h-12 rounded-full border-4 border-black flex items-center justify-center text-white shrink-0 animate-pulse bg-[#EF4444] shadow-[2px_2px_0px_#000]`}>
           {timerRemaining}
@@ -81,15 +77,13 @@ export default function VotingView({
       {isSpectator && (
         <div className="bg-[#FFF] border-4 border-black p-5 rounded-2xl w-full text-center shadow-retro mb-6 text-black select-none relative">
           <span className="absolute -top-4 left-1/2 transform -translate-x-1/2 text-xs font-black bg-purple-600 text-white border-2 border-black px-4 py-1 rounded-lg uppercase shadow-[2px_2px_0px_#000] whitespace-nowrap">
-            {isAf ? "TOESKOUER" : "SPECTATOR ROLE"}
+            SPECTATOR ROLE
           </span>
           <h4 className="text-lg font-black uppercase mt-2">
-            {isAf ? "👁️ TOESKOUER STEMSÔN" : "👁️ SPECTATOR CAST STATION"}
+            👁️ SPECTATOR CAST STATION
           </h4>
           <p className="text-xs font-bold text-gray-700 leading-normal mt-1.5">
-            {isAf 
-              ? "Jy is tans 'n toeskouer! Jy kan nie op antwoorde stem nie, maar jy kan REAKSIES stuur om die spelers se senuwees te knaag!" 
-              : "You are currently a spectator! You can't cast candidate votes, but you can spam REACTION EMOJIS below to intimidate players!"}
+            You are currently a spectator! You can't cast candidate votes, but you can spam REACTION EMOJIS below to intimidate players!
           </p>
         </div>
       )}
@@ -125,18 +119,18 @@ export default function VotingView({
               {/* Overlay card tag */}
               <div className="flex items-center justify-between">
                 <span className="font-black tracking-widest text-[10px] bg-black text-white px-3 py-1 rounded-md border-2 border-black uppercase shadow-[1px_1px_0_rgba(0,0,0,0.15)] font-sans">
-                  {isAf ? "Brein Monster" : "Brain Specimen"} #{idx + 1}
+                  Brain Specimen #{idx + 1}
                 </span>
 
                 {isSelf && (
                   <span className="text-[9px] font-black tracking-wider bg-white text-rose-600 border-2 border-black px-2.5 py-1 rounded-md uppercase flex items-center gap-1 select-none">
-                    <AlertTriangle className="w-3 h-3 text-rose-500 shrink-0" /> {isAf ? "JOU EIE BREINGOLF" : "YOUR OWN BRAIN WAVE"}
+                    <AlertTriangle className="w-3 h-3 text-rose-500 shrink-0" /> YOUR OWN BRAIN WAVE
                   </span>
                 )}
 
                 {hasVoted && isSelected && (
                   <span className="text-[9px] font-black tracking-wider bg-black text-[#A3E635] border-2 border-black px-2.5 py-1 rounded-md uppercase flex items-center gap-1">
-                    <ThumbsUp className="w-3 h-3 text-[#A3E635] shrink-0" /> {isAf ? "GEKIES" : "TAP SELECTED"}
+                    <ThumbsUp className="w-3 h-3 text-[#A3E635] shrink-0" /> TAP SELECTED
                   </span>
                 )}
               </div>
@@ -153,7 +147,7 @@ export default function VotingView({
       {/* Chaotic Live Emoji Reaction Pane */}
       <div className="w-full mt-8 bg-white text-black rounded-xl border-4 border-black p-4 text-center flex flex-col gap-2 relative shadow-[10px_10px_0px_rgba(0,0,0,1)]">
         <div className="text-[10px] uppercase font-black text-stone-600 tracking-wider flex items-center justify-center gap-1 select-none font-sans">
-          <MessageCircle className="w-3.5 h-3.5 text-stone-500" /> {isAf ? "STUUR REAKSIES NA ALMAL SE SKERM:" : "SPAM LIVE MULTIPLAYER REACTION VALVE:"}
+          <MessageCircle className="w-3.5 h-3.5 text-stone-500" /> SPAM LIVE MULTIPLAYER REACTION VALVE:
         </div>
         
         <div className="flex items-center justify-around mt-1">

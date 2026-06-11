@@ -14,9 +14,7 @@ interface LobbyViewProps {
   player: { id: string; name: string; isHost: boolean };
   onStartGame: () => void;
   onTransferHost: (targetPlayerId: string) => void;
-  onSetLanguage: (language: 'EN' | 'AF') => void;
   errorMsg: string | null;
-  language: 'EN' | 'AF';
 }
 
 const FUNNY_TIPS = [
@@ -28,36 +26,23 @@ const FUNNY_TIPS = [
   "Warning: Extreme laughter might trigger spontaneous brain cell splitting. Proceed at your own comedy risk."
 ];
 
-const FUNNY_TIPS_AF = [
-  "As jy nie aan 'n snaakse antwoord kan dink nie, skryf iets oor 'n kwaai meerkat. Almal hou van meerkatte.",
-  "Om op jouself te stem is fisies onmoontlik. Spaar jou laaste breinsel die vernedering.",
-  "Bonus kategorieë word bereken deur ons sarkastiese KI. Vleiery in jou antwoord waarborg nie ekstra punte nie (maar kan snaaks wees).",
-  "Wetenskap bevestig dat die dra van 'n vergiet op jou kop komiese prestasie met 12.4% verhoog.",
-  "As jou grappe misluk, beveel aan dat jou sleutelbord-vertaling vertraag was.",
-  "Waarskuwing: Uiterste lag kan spontane breinsel-skeuring veroarsak. Gaan voort op eie risiko."
-];
-
 export default function LobbyView({
   roomCode,
   players,
   player,
   onStartGame,
   onTransferHost,
-  onSetLanguage,
-  errorMsg,
-  language
+  errorMsg
 }: LobbyViewProps) {
   const [tipIndex, setTipIndex] = useState(0);
 
   useEffect(() => {
-    const tipsCount = language === 'AF' ? FUNNY_TIPS_AF.length : FUNNY_TIPS.length;
+    const tipsCount = FUNNY_TIPS.length;
     const tipTimer = setInterval(() => {
       setTipIndex((prev) => (prev + 1) % tipsCount);
     }, 5500);
     return () => clearInterval(tipTimer);
-  }, [language]);
-
-  const isAf = language === 'AF';
+  }, []);
 
   // Separate active content and spectator status
   const activePlayers = players.filter(p => !p.isSpectator);
@@ -72,13 +57,13 @@ export default function LobbyView({
       {/* Header Room Code Billboard */}
       <div className="bg-[#FFF] border-4 border-black p-5 rounded-xl w-full text-center shadow-retro mb-5 relative mt-2 text-black">
         <span className="absolute -top-4 left-1/2 transform -translate-x-1/2 text-xs font-black bg-[#F472B6] text-white border-3 border-[#000000] px-4 py-1 rounded-lg uppercase shadow-[2px_2px_0px_#000] whitespace-nowrap">
-          {isAf ? "KAMERKODE-PORTAAL" : "ROOM CODE LOBBY"}
+          ROOM CODE LOBBY
         </span>
         <h2 className="text-5xl font-extrabold tracking-widest mt-2 bg-black text-[#A3E635] py-3.5 px-6 rounded-xl border-4 border-black flex items-center justify-center font-mono">
           {roomCode}
         </h2>
         <p className="text-xs font-black text-black mt-3 uppercase tracking-wider">
-          {isAf ? "DEEL HIERDIE KODE OM SPELERS TE KOPPEL!" : "SHARE THIS CODE TO CONNECT SYNAPSES!"}
+          SHARE THIS CODE TO CONNECT SYNAPSES!
         </p>
       </div>
 
@@ -88,24 +73,12 @@ export default function LobbyView({
         <div className="flex items-center justify-between border-b-4 border-black pb-3">
           <h3 className="text-base font-black text-black uppercase tracking-wider flex items-center gap-2">
             <Users className="w-5 h-5 text-black shrink-0" /> 
-            {isAf ? "SPELERS GEKOPPEL" : "PLAYERS CONNECTED"} ({totalActivePlayers}/5)
+            PLAYERS CONNECTED ({totalActivePlayers}/5)
           </h3>
           
-          {/* Host status language preference controls within Lobby directly */}
-          {player.isHost ? (
-            <button
-              onClick={() => onSetLanguage(language === 'EN' ? 'AF' : 'EN')}
-              type="button"
-              className="flex items-center gap-1 text-[10px] bg-purple-100 hover:bg-purple-200 text-purple-800 border-2 border-black rounded-lg px-2.5 py-1 font-black uppercase transition shadow-[1px_1px_0px_rgba(0,0,0,1)] active:translate-y-px cursor-pointer"
-            >
-              <Languages className="w-3.5 h-3.5" />
-              {isAf ? "TROTSE AFRIKAANS" : "ENGLISH MODE"}
-            </button>
-          ) : (
-            <span className="text-[10px] bg-[#FDE047] text-black border-2 border-black px-2.5 py-1 rounded-lg font-black uppercase shadow-[1px_1px_rgba(0,0,0,1)]">
-              {isAf ? "PORTAAL" : "LOBBY"}
-            </span>
-          )}
+          <span className="text-[10px] bg-[#FDE047] text-black border-2 border-black px-2.5 py-1 rounded-lg font-black uppercase shadow-[1px_1px_rgba(0,0,0,1)]">
+            LOBBY
+          </span>
         </div>
 
         {/* List of Players */}
@@ -137,10 +110,10 @@ export default function LobbyView({
                   </div>
                   <div className="flex flex-col text-left">
                     <span className="font-extrabold text-black tracking-wide text-md flex items-center gap-1.5">
-                      {p.name} {isMe && <span className="text-[#6D28D9] font-black text-xs">({isAf ? "JY" : "YOU"})</span>}
+                      {p.name} {isMe && <span className="text-[#6D28D9] font-black text-xs">(YOU)</span>}
                     </span>
                     <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wide">
-                      {isAf ? "Breinsel Aktief" : "Synapse Online"}
+                      Synapse Online
                     </span>
                   </div>
                 </div>
@@ -151,23 +124,23 @@ export default function LobbyView({
                     <button
                       onClick={() => onTransferHost(p.id)}
                       type="button"
-                      title={isAf ? "Dra gasheerrol oor" : "Transfer host role"}
+                      title="Transfer host role"
                       className="flex items-center gap-1 bg-stone-100 hover:bg-yellow-250 hover:border-yellow-400 text-[9px] font-black border-2 border-black p-1 px-2 rounded-lg transition"
                     >
                       <Crown className="w-3 h-3 text-amber-500 fill-current" />
-                      <span>{isAf ? "MAAK GASHEER" : "GIVE HOST"}</span>
+                      <span>GIVE HOST</span>
                     </button>
                   )}
                   
                   {p.isHost ? (
                     <span className="text-[10px] uppercase font-black tracking-widest bg-[#F472B6] text-white px-2.5 py-1 rounded-lg border-2 border-black shadow-[2px_2px_0px_rgba(0,0,0,1)] flex items-center gap-1">
                       <Crown className="w-3.5 h-3.5 text-yellow-300 fill-current" />
-                      {isAf ? "GASHEER" : "HOST"}
+                      HOST
                     </span>
                   ) : (
                     <div className="flex items-center gap-1 bg-black text-white py-1 px-2 rounded-lg border-2 border-black text-[9px] font-black select-none">
                       <span className="w-2.5 h-2.5 rounded-full border border-black bg-[#A3E635] animate-pulse" />
-                      {isAf ? "GEREED" : "READY"}
+                      READY
                     </div>
                   )}
                 </div>
@@ -178,10 +151,7 @@ export default function LobbyView({
           {/* Waiting animation spaces for missing players */}
           {totalActivePlayers < 3 && (
             <div className="p-4 rounded-xl border-4 border-dashed border-black bg-stone-50 text-center text-black/60 text-xs font-black animate-pulse uppercase tracking-wider">
-              {isAf 
-                ? `Wag vir nog ${3 - totalActivePlayers} speler${totalActivePlayers === 1 ? "s" : ""} om te aktiveer...`
-                : `Waiting for ${3 - totalActivePlayers} more player${totalActivePlayers === 1 ? "s" : ""} to activate...`
-              }
+              {`Waiting for ${3 - totalActivePlayers} more player${totalActivePlayers === 1 ? "s" : ""} to activate...`}
             </div>
           )}
         </div>
@@ -190,7 +160,7 @@ export default function LobbyView({
         {spectators.length > 0 && (
           <div className="mt-2 pt-3 border-t-4 border-dashed border-gray-300">
             <h4 className="text-xs font-black text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-              <span>👁️ {isAf ? "GEKOPPELDE TOESKOUERS" : "SPECTATORS WATCHING"} ({spectators.length})</span>
+              <span>👁️ SPECTATORS WATCHING ({spectators.length})</span>
             </h4>
             <div className="flex flex-wrap gap-2 mt-2">
               {spectators.map((spec) => (
@@ -200,7 +170,7 @@ export default function LobbyView({
                 >
                   <span className="text-base select-none">{spec.avatar || "👁️"}</span>
                   <span className="text-black">{spec.name}</span>
-                  {spec.id === player.id && <span className="text-purple-600 font-extrabold text-[10px]">({isAf ? "JY" : "YOU"})</span>}
+                  {spec.id === player.id && <span className="text-purple-600 font-extrabold text-[10px]">(YOU)</span>}
                 </div>
               ))}
             </div>
@@ -221,12 +191,12 @@ export default function LobbyView({
             {totalActivePlayers < 3 ? (
               <p className="text-xs font-black text-rose-600 mb-3 flex items-center justify-center gap-1 uppercase tracking-wide">
                 <AlertCircle className="w-3.5 h-3.5 text-rose-600" /> 
-                {isAf ? "Speletjie benodig minstens 3 aktiewe spelers om te begin!" : "Game requires minimum 3 active players to start!"}
+                Game requires minimum 3 active players to start!
               </p>
             ) : (
               <p className="text-xs font-black text-[#6D28D9] mb-3 flex items-center justify-center gap-1 uppercase tracking-wide">
                 <Sparkles className="w-3.5 h-3.5 animate-bounce text-[#6D28D9]" /> 
-                {isAf ? "SPELERLYS GERIG! LAUNCH WANNEER GEREED!" : "PLAYERS LIST COMPLETED. LAUNCH WHEN READY!"}
+                PLAYERS LIST COMPLETED. LAUNCH WHEN READY!
               </p>
             )}
             
@@ -236,19 +206,16 @@ export default function LobbyView({
               id="start-match-btn"
               className="w-full bg-[#A3E635] text-black border-4 border-black py-4 rounded-xl font-black text-xl hover:bg-[#8cdc21] shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] disabled:opacity-45 disabled:cursor-not-allowed transition flex items-center justify-center gap-2 cursor-pointer pointer-events-auto"
             >
-              <Play className="w-5 h-5 fill-current" /> {isAf ? "BEGIN MET DIE SPELETJIE NOU" : "START MATCH NOW"}
+              <Play className="w-5 h-5 fill-current" /> START MATCH NOW
             </button>
           </div>
         ) : (
           <div className="mt-3 p-4 rounded-xl bg-black border-4 border-black text-center text-[#A3E635] text-xs font-black flex flex-col gap-1 shadow-retro-sm">
             <span className="animate-pulse text-[#FDE047] font-black uppercase tracking-wider text-sm">
-              {isAf ? "WAG VIR GASHEER" : "WAITING ON SYNC"}
+              WAITING ON SYNC
             </span>
             <span className="text-stone-300">
-              {isAf 
-                ? `Sê vir Gasheer (${players.find(p => p.isHost)?.name || "onbekend"}) om die wedstryd te begin!`
-                : `Tell Host (${players.find(p => p.isHost)?.name || "unknown"}) to press the golden trigger!`
-              }
+              {`Tell Host (${players.find(p => p.isHost)?.name || "unknown"}) to press the golden trigger!`}
             </span>
           </div>
         )}
@@ -265,10 +232,10 @@ export default function LobbyView({
           className="bg-white text-black p-4 rounded-xl border-3 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
         >
           <strong className="text-[#6D28D9] block mb-1 font-black uppercase tracking-wider text-[11px] border-b-2 border-black pb-0.5">
-            {isAf ? "KOMEDIE INSPIRASIE-KRAAN" : "COMEDY INSPIRATION VALVE"}
+            COMEDY INSPIRATION VALVE
           </strong>
           <span className="italic font-bold text-xs">
-            "{isAf ? FUNNY_TIPS_AF[tipIndex] : FUNNY_TIPS[tipIndex]}"
+            "{FUNNY_TIPS[tipIndex]}"
           </span>
         </motion.div>
       </div>

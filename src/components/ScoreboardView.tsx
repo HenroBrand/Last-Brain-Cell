@@ -17,7 +17,6 @@ interface ScoreboardViewProps {
   commentary: string;
   round: number;
   maxRounds: number;
-  language?: 'EN' | 'AF';
 }
 
 export default function ScoreboardView({
@@ -27,12 +26,9 @@ export default function ScoreboardView({
   onNextRound,
   commentary,
   round,
-  maxRounds,
-  language = 'EN'
+  maxRounds
 }: ScoreboardViewProps) {
   const [activeTab, setActiveTab] = useState<"answers" | "standings">("answers");
-
-  const isAf = language === 'AF';
 
   // Play triumph fanfare on scoreboard load
   useEffect(() => {
@@ -48,7 +44,7 @@ export default function ScoreboardView({
       {/* Round indicator top bar */}
       <div className="w-full flex items-center justify-between mb-5 select-none text-black">
         <span className="text-xs font-black bg-white border-3 border-black rounded-lg px-3 py-1 shadow-[2px_2px_0_#000] uppercase font-sans shrink-0">
-          {isAf ? `RONDTE ${round} / ${maxRounds} VOLTOOI` : `ROUND ${round} / ${maxRounds} COMPLETE`}
+          `ROUND ${round} / ${maxRounds} COMPLETE`
         </span>
  
         {/* Tab switcher */}
@@ -60,7 +56,7 @@ export default function ScoreboardView({
               activeTab === "answers" ? "bg-[#FDE047] text-black border-black" : "bg-black text-white border-transparent"
             }`}
           >
-            {isAf ? "ANTWOORDE" : "ANSWERS"}
+            ANSWERS
           </button>
           <button
             onClick={() => setActiveTab("standings")}
@@ -69,7 +65,7 @@ export default function ScoreboardView({
               activeTab === "standings" ? "bg-[#FDE047] text-black border-black" : "bg-black text-white border-transparent"
             }`}
           >
-            {isAf ? "PUNTE" : "STANDINGS"}
+            STANDINGS
           </button>
         </div>
       </div>
@@ -83,7 +79,7 @@ export default function ScoreboardView({
         
         <div className="ml-8 text-left">
           <span className="text-[10px] font-black uppercase text-[#6D28D9] tracking-wider flex items-center gap-1 font-sans">
-            <MessageSquare className="w-3 h-3 text-[#6D28D9]" /> {isAf ? "KI-GASHEER KOMMENTAAR" : "HOST AI COMMENTARY"}
+            <MessageSquare className="w-3 h-3 text-[#6D28D9]" /> HOST AI COMMENTARY
           </span>
           <p className="text-black text-sm font-extrabold italic mt-1 leading-relaxed">
             {commentary || "Synthesizing sarcastic responses..."}
@@ -95,7 +91,7 @@ export default function ScoreboardView({
         /* Round Submissions and Votes Tally Cards */
         <div className="w-full flex flex-col gap-4">
           <h3 className="text-xs font-black bg-[#F472B6] text-white border-3 border-black px-3 py-1.5 rounded-lg shadow-[3px_3px_0_#000] uppercase tracking-wider text-left self-start font-sans">
-            {isAf ? "STEMME & BREINSEL PUNTE" : "VOTES & NEURONS AWARDED"}
+            VOTES & NEURONS AWARDED
           </h3>
   
           {answers.map((ans, idx) => {
@@ -123,7 +119,7 @@ export default function ScoreboardView({
                   
                   {/* Total Round Votes count */}
                   <span className="bg-[#60A5FA] border-2 border-black text-black text-xs px-3 py-0.5 rounded-md font-black">
-                    {votesCount} {isAf ? (votesCount === 1 ? "Stem" : "Stemme") : (votesCount === 1 ? "Vote" : "Votes")}
+                    {votesCount} {votesCount === 1 ? "Vote" : "Votes"}
                   </span>
                 </div>
   
@@ -134,7 +130,7 @@ export default function ScoreboardView({
                 {/* Voter credits */}
                 {votesCount > 0 && (
                   <div className="text-[11px] text-black font-extrabold bg-stone-100 border-2 border-black p-2.5 rounded-lg mt-1 select-none leading-normal">
-                    <span className="text-[#6D28D9] font-black uppercase font-sans">{isAf ? "Gesteem deur:" : "Voted by:"}</span>{" "}
+                    <span className="text-[#6D28D9] font-black uppercase font-sans">Voted by:</span>{" "}
                     {ans.votes
                       .map((vid) => players.find((p) => p.id === vid)?.name || "Disconnected Member")
                       .join(", ")}
@@ -145,7 +141,7 @@ export default function ScoreboardView({
                 {idx === 0 && votesCount > 0 && (
                   <div className="flex gap-2.5 flex-wrap mt-1">
                     <span className="text-[10px] font-black uppercase bg-[#FDE047] text-black px-2.5 py-1 rounded-md border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] flex items-center gap-1 select-none font-sans">
-                      <Trophy className="w-3.5 h-3.5 text-black" /> {isAf ? "Gewilde Mening Toekenning (+100)" : "Popular Opinion Badge (+100)"}
+                      <Trophy className="w-3.5 h-3.5 text-black" /> Popular Opinion Badge (+100)
                     </span>
                   </div>
                 )}
@@ -157,7 +153,7 @@ export default function ScoreboardView({
         /* Overall Game Score Standing Ladder */
         <div className="w-full bg-white text-black rounded-xl p-5 border-6 border-black shadow-[12px_12px_0px_rgba(0,0,0,1)] flex flex-col gap-4">
           <h3 className="text-xs font-black bg-[#C084FC] text-black border-3 border-black px-3 py-1.5 rounded-lg shadow-[3px_3px_0_#000] uppercase tracking-wider text-left self-start select-none font-sans">
-            {isAf ? "ALGEHELE SPELSTAND-TALLY" : "OVERALL LEADERBOARD STANDINGS"}
+            OVERALL LEADERBOARD STANDINGS
           </h3>
   
           <div className="flex flex-col gap-3.5 mt-1">
@@ -184,7 +180,7 @@ export default function ScoreboardView({
                     <div className="flex flex-col">
                       <span className="font-extrabold text-black text-md leading-tight uppercase font-sans tracking-wide">{p.name}</span>
                       <span className="text-[9px] font-black uppercase tracking-wider text-stone-600 block mt-0.5 font-sans">
-                        {isAf ? "Totale Breinselle Geaktiveer" : "Total Neurons Activated"}
+                        Total Neurons Activated
                       </span>
                     </div>
                   </div>
@@ -218,8 +214,8 @@ export default function ScoreboardView({
             <RefreshCw className="w-5 h-5 animate-spin-reverse" />
             <span>
               {round >= maxRounds 
-                ? (isAf ? "BEPAAL KROONWENNER NOW" : "DETERMINE CROWNING WINNER") 
-                : (isAf ? "GAAN NA VOLGENDE RONDTE" : "PROCEED TO NEXT ROUND")
+                ? "DETERMINE CROWNING WINNER" 
+                : "PROCEED TO NEXT ROUND"
               }
             </span>
           </button>
@@ -229,12 +225,9 @@ export default function ScoreboardView({
       {/* Guest Status banner info */}
       {!player.isHost && (
         <div className="mt-8 p-4 rounded-xl bg-black border-4 border-black text-center text-[#FBBF24] text-xs font-black max-w-sm flex flex-col gap-1 select-none shadow-retro-sm pb-4">
-          <span className="animate-pulse text-white font-black uppercase tracking-wider">{isAf ? "WAG VIR GASHEER SE TRANSISIE" : "WAITING ON HOST CONCURRENCE"}</span>
+          <span className="animate-pulse text-white font-black uppercase tracking-wider">WAITING ON HOST CONCURRENCE</span>
           <span className="text-stone-300">
-            {isAf 
-              ? `${players.find(p => p.isHost)?.name || "Die Gasheer"} ondersoek tellings voordat hy die volgende onmoontlike scenario bekendstel!`
-              : `${players.find(p => p.isHost)?.name || "The Host"} is inspecting scores before launching the next impossible scenario.`
-            }
+            {`${players.find(p => p.isHost)?.name || "The Host"} is inspecting scores before launching the next impossible scenario.`}
           </span>
         </div>
       )}
