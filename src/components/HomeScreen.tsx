@@ -134,22 +134,51 @@ export default function HomeScreen({ onJoinRoom, onCreateRoom, errorMsg }: HomeS
 
         {/* Custom Avatar Selector panel */}
         <div className="flex flex-col gap-1 text-left">
-          <span className="text-xs font-black uppercase text-black">
-            CHOOSE YOUR AVATAR
-          </span>
-          <div className="grid grid-cols-6 gap-1.5 max-h-[90px] overflow-y-auto p-1 border-3 border-black rounded-xl bg-slate-50">
-            {AVATARS.map((av) => (
-              <button
-                key={av}
-                onClick={() => setAvatar(av)}
-                type="button"
-                className={`text-xl p-1.5 rounded-lg border-2 text-center transition hover:scale-110 cursor-pointer ${
-                  avatar === av ? 'border-purple-600 bg-purple-100 shadow-[1px_1px_0_rgba(0,0,0,1)]' : 'border-transparent hover:bg-slate-200'
-                }`}
-              >
-                {av}
-              </button>
-            ))}
+          <div className="flex justify-between items-center sm:pr-1">
+            <span className="text-xs font-black uppercase text-black">
+              CHOOSE YOUR AVATAR
+            </span>
+            <span className="text-[10px] font-black text-purple-600 bg-purple-50 border border-black/20 rounded px-1.5 py-0.5 select-none animate-pulse">
+              LIVE: {avatar}
+            </span>
+          </div>
+          
+          <div className="flex gap-2 items-stretch mt-0.5">
+            {/* Grid of presets */}
+            <div className="grid grid-cols-6 gap-1.5 max-h-[90px] overflow-y-auto p-1 border-3 border-black rounded-xl bg-slate-50 flex-1">
+              {AVATARS.map((av) => (
+                <button
+                  key={av}
+                  onClick={() => setAvatar(av)}
+                  type="button"
+                  className={`text-xl p-1 rounded-lg border-2 text-center transition hover:scale-110 cursor-pointer ${
+                    avatar === av ? 'border-purple-600 bg-purple-100 shadow-[1px_1px_0_rgba(0,0,0,1)]' : 'border-transparent hover:bg-slate-200'
+                  }`}
+                >
+                  {av}
+                </button>
+              ))}
+            </div>
+
+            {/* Custom input */}
+            <div className="flex flex-col justify-center items-center bg-purple-100 border-3 border-black p-1.5 rounded-xl text-center w-24 shrink-0 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+              <span className="text-[8px] font-black uppercase text-black leading-none mb-1">TYPE COZY</span>
+              <input
+                type="text"
+                maxLength={3}
+                value={avatar}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setAvatar(val);
+                }}
+                onBlur={() => {
+                  if (!avatar.trim()) setAvatar("🦊");
+                }}
+                placeholder="🦊"
+                className="w-full text-center text-lg bg-white border-2 border-black rounded-md py-0.5 font-bold font-sans tracking-tight focus:outline-none focus:ring-1 focus:ring-purple-600"
+                title="Type any custom emoji or up to 3 characters!"
+              />
+            </div>
           </div>
         </div>
 

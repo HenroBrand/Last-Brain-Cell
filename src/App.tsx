@@ -498,6 +498,31 @@ export default function App() {
             </motion.div>
           )}
         </AnimatePresence>
+        
+        {/* Global Floating Reaction Valve for real-time multiplayer spamming */}
+        {roomCode && player && roomState && (
+          <div className="w-full max-w-sm mx-auto mt-6 bg-purple-950/90 text-white rounded-xl border-3 border-black p-2.5 text-center flex flex-col gap-1.5 relative z-30 shadow-[4px_4px_0px_rgba(0,0,0,1)] select-none">
+            <div className="text-[9px] uppercase font-black text-purple-300 tracking-wider flex items-center justify-center gap-1">
+              💬 SPAM REACTION VALVE (SOUNDS FOR ALL PLAYERS!)
+            </div>
+            
+            <div className="flex items-center justify-around">
+              {["🧠", "💥", "😂", "💀", "💩", "🤡", "🎉", "🔥"].map((e) => (
+                <button
+                  onClick={() => {
+                    soundSynthesizer.playReactionSfx(e);
+                    handleSendEmoji(e);
+                  }}
+                  key={e}
+                  type="button"
+                  className="text-2xl hover:scale-135 active:scale-95 transition p-1.5 hover:rotate-12 cursor-pointer focus:outline-none pointer-events-auto"
+                >
+                  {e}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Global Floating Emojis Reaction stream overlay */}
         <FloatingEmojis emojis={floatingEmojis} />

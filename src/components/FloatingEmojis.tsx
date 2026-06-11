@@ -3,9 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { EmojiBroadcast } from "../types.js";
+import { soundSynthesizer } from "../utils/audio.js";
 
 interface FloatingEmojisProps {
   emojis: EmojiBroadcast[];
@@ -20,22 +21,32 @@ interface FloatingItem {
 
 export default function FloatingEmojis({ emojis }: FloatingEmojisProps) {
   const [items, setItems] = useState<FloatingItem[]>([]);
-  const [seenIds, setSeenIds] = useState<Set<string>>(new Set());
+  const seenIdsRef = useRef<Set<string>>(new Set());
+  const isFirstLoadRef = useRef<boolean>(true);
 
   useEffect(() => {
     if (emojis.length === 0) return;
 
-    const now = Date.now();
+    // Check if it's the very first time we receive the emojis.
+    // If so, populate seenIds with current records but don't float or play them,
+    // thereby avoiding sudden visual and audio spam of historic reactions on mount.
+    if (isFirstLoadRef.current) {
+      emojis.forEach((e) => {
+        const uniqueId = e.id || `${e.playerId}_${e.timestamp}`;
+        seenIdsRef.current.add(uniqueId);
+      });
+      isFirstLoadRef.current = false;
+      return;
+    }
+
     const newItems: FloatingItem[] = [];
-    const nextSeen = new Set(seenIds);
 
     emojis.forEach((e) => {
-      // If we haven't seen this reaction ID and it's reasonably fresh
       const uniqueId = e.id || `${e.playerId}_${e.timestamp}`;
-      if (!nextSeen.has(uniqueId) && now - e.timestamp < 3500) {
-        nextSeen.add(uniqueId);
+      if (!seenIdsRef.current.has(uniqueId)) {
+        seenIdsRef.current.add(uniqueId);
         
-        // Generate a stable visual offset based on the timestamp or ID string so it doesn't reposition on repaint
+        // Generate a stable visual offset based on the uniqueId string
         const hash = uniqueId.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
         const stableLeft = 10 + (hash % 80);
 
@@ -45,19 +56,24 @@ export default function FloatingEmojis({ emojis }: FloatingEmojisProps) {
           sender: e.playerName,
           left: stableLeft
         });
+
+        // Play the silly reaction synthesizer sound for this received emoji
+        soundSynthesizer.playReactionSfx(e.emoji);
       }
     });
 
     if (newItems.length > 0) {
-      setSeenIds(nextSeen);
       setItems((prev) => [...prev, ...newItems].slice(-15));
     }
-  }, [emojis, seenIds]);
+  }, [emojis]);
 
   // Clean items after animation expires
   useEffect(() => {
     const timer = setInterval(() => {
-      setItems((prev) => prev.slice(1));
+      setItems((prev) => {
+        if (prev.length === 0) return prev;
+        return prev.slice(1);
+      });
     }, 4000);
     return () => clearInterval(timer);
   }, []);
