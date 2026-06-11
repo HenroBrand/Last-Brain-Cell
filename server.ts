@@ -486,10 +486,13 @@ setInterval(async () => {
             [list[i], list[j]] = [list[j], list[i]];
           }
           room.shuffledAnswers = list;
-          room.revealedAnswerIndex = -1;
-          room.phase = 'REVEAL';
-          room.timerDuration = 6; // buffer for transition
-          room.timerRemaining = 6;
+          room.revealedAnswerIndex = list.length - 1;
+          room.phase = 'VOTING';
+          room.timerDuration = 45;
+          room.timerRemaining = 45;
+          room.commentary = room.language === 'AF'
+            ? "Stem nou! Kies die snaaksste, mees belaglike een."
+            : "Vote now! Select the funniest, most ridiculous option. Self-voting disabled!";
         }
       } else if (room.phase === 'VOTING') {
         const voteCount = Object.keys(room.votes).filter(voterId => {
