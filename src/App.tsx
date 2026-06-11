@@ -19,6 +19,8 @@ import ScoreboardView from "./components/ScoreboardView.js";
 import EndGameView from "./components/EndGameView.js";
 import FloatingEmojis from "./components/FloatingEmojis.js";
 
+const API = (import.meta as any).env?.VITE_BACKEND_URL || (import.meta as any).env?.VITE_API_URL || "";
+
 export default function App() {
   const [roomCode, setRoomCode] = useState<string | null>(null);
   const [player, setPlayer] = useState<{ id: string; name: string; isHost: boolean } | null>(null);
@@ -42,7 +44,7 @@ export default function App() {
       console.log(`Checking cached session: Code ${savedCode}, Id ${savedId}`);
       
       // Perform initial check fetch
-      fetch(`/api/room/${savedCode.toUpperCase()}?playerId=${savedId}`)
+      fetch(`${API}/api/room/${savedCode.toUpperCase()}?playerId=${savedId}`)
         .then((res) => {
           if (!res.ok) throw new Error("Stale session");
           return res.json();
@@ -78,7 +80,7 @@ export default function App() {
 
     setIsPolling(true);
     const fetchState = () => {
-      fetch(`/api/room/${roomCode}?playerId=${player.id}`)
+      fetch(`${API}/api/room/${roomCode}?playerId=${player.id}`)
         .then((res) => {
           if (res.status === 404) {
             console.log(`Room ${roomCode} is no longer active (404). Gracefully exiting room.`);
@@ -147,7 +149,7 @@ export default function App() {
   const triggerAction = async (action: string, payload: any = {}) => {
     if (!roomCode || !player) return;
     try {
-      const res = await fetch(`/api/room/${roomCode}/action`, {
+      const res = await fetch(`${API}/api/room/${roomCode}/action`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ playerId: player.id, action, payload })
@@ -180,7 +182,7 @@ export default function App() {
   // Create game lobby
   const handleCreateRoom = async (playerName: string, avatar: string, isSpectator: boolean, language: 'EN' | 'AF') => {
     try {
-      const res = await fetch("/api/room/create", {
+      const res = await fetch(`${API}/api/room/create`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ playerName, avatar, isSpectator, language })
@@ -204,7 +206,7 @@ export default function App() {
   // Join existing lobby
   const handleJoinRoom = async (playerName: string, enteredRoomCode: string, avatar: string, isSpectator: boolean) => {
     try {
-      const res = await fetch("/api/room/join", {
+      const res = await fetch(`${API}/api/room/join`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ playerName, roomCode: enteredRoomCode, avatar, isSpectator })
@@ -284,7 +286,6 @@ export default function App() {
         );
 
       case 'CHALLENGE_REVEAL':
-        // Host advances after delay, or we auto-advance from server state. Let's make an active countdown slide-in!
         return (
           <div className="w-full max-w-md mx-auto p-4 flex flex-col items-center justify-center min-h-[50vh] text-center">
             <motion.div
@@ -312,7 +313,6 @@ export default function App() {
               </button>
             )}
 
-            {/* Micro client-driven trigger to automatically prompt next transition if server delays */}
             <ClientTimerAutoAdvancer
               timerRemaining={roomState.timerRemaining}
               isHost={player.isHost}
@@ -321,7 +321,7 @@ export default function App() {
           </div>
         );
 
-      case 'SUBMISSION':
+      case 'SUBMISSION': {
         const myRecord = roomState.players.find(p => p.id === player.id);
         return (
           <SubmissionView
@@ -334,6 +334,7 @@ export default function App() {
             language={roomState.language}
           />
         );
+      }
 
       case 'REVEAL':
         return (
@@ -347,7 +348,7 @@ export default function App() {
           />
         );
 
-      case 'VOTING':
+      case 'VOTING': {
         const myRecordForVote = roomState.players.find(p => p.id === player.id);
         const myAnswerObj = roomState.answers.find(a => a.playerId === player.id);
         return (
@@ -363,6 +364,7 @@ export default function App() {
             language={roomState.language}
           />
         );
+      }
 
       case 'SCOREBOARD':
         return (

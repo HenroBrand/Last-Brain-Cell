@@ -5,13 +5,15 @@
 
 import express from "express";
 import path from "path";
+import cors from "cors";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
 import { GamePhase, Player, Challenge, RoundAnswer, PlayerStats, RoomState, EmojiBroadcast } from "./src/types.js";
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = parseInt(process.env.PORT || "3000", 10);
 
+app.use(cors({ origin: "https://last-brain-cell.vercel.app/"}))
 app.use(express.json());
 
 // In-memory database of active room sessions
