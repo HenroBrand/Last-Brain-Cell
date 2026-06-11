@@ -20,31 +20,39 @@ interface FloatingItem {
 
 export default function FloatingEmojis({ emojis }: FloatingEmojisProps) {
   const [items, setItems] = useState<FloatingItem[]>([]);
+  const [seenIds, setSeenIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (emojis.length === 0) return;
 
-    // Map new incoming emojis only
     const now = Date.now();
-    const active = emojis
-      .filter(e => now - e.timestamp < 3500)
-      .map(e => ({
-        id: `${e.playerId}_${e.timestamp}_${Math.random()}`,
-        emoji: e.emoji,
-        sender: e.playerName,
-        left: 10 + Math.random() * 80 // Random horizontal percentage
-      }));
+    const newItems: FloatingItem[] = [];
+    const nextSeen = new Set(seenIds);
 
-    // Consolidate list and keep maximum 15 on screen to avoid performance stutter
-    setItems((prev) => {
-      const merged = [...prev, ...active];
-      // Filter out duplicates
-      const unique = merged.filter((item, index, self) =>
-        self.findIndex(t => t.id === item.id) === index
-      );
-      return unique.slice(-15);
+    emojis.forEach((e) => {
+      // If we haven't seen this reaction ID and it's reasonably fresh
+      const uniqueId = e.id || `${e.playerId}_${e.timestamp}`;
+      if (!nextSeen.has(uniqueId) && now - e.timestamp < 3500) {
+        nextSeen.add(uniqueId);
+        
+        // Generate a stable visual offset based on the timestamp or ID string so it doesn't reposition on repaint
+        const hash = uniqueId.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+        const stableLeft = 10 + (hash % 80);
+
+        newItems.push({
+          id: uniqueId,
+          emoji: e.emoji,
+          sender: e.playerName,
+          left: stableLeft
+        });
+      }
     });
-  }, [emojis]);
+
+    if (newItems.length > 0) {
+      setSeenIds(nextSeen);
+      setItems((prev) => [...prev, ...newItems].slice(-15));
+    }
+  }, [emojis, seenIds]);
 
   // Clean items after animation expires
   useEffect(() => {

@@ -47,6 +47,7 @@ export interface PlayerStats {
   totalVotesReceived: number;
   mostVotesSingleRound: number;
   award: string;
+  performanceDescription?: string;
 }
 
 export interface RoomState {
@@ -67,6 +68,7 @@ export interface RoomState {
 }
 
 export interface EmojiBroadcast {
+  id: string;
   playerId: string;
   playerName: string;
   emoji: string;

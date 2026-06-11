@@ -23,7 +23,12 @@ const FUNNY_TIPS = [
   "Bonus categories are computed by our sarcastic AI. Flattery inside your answer does not guarantee extra points (but could be funny).",
   "Science confirms that wearing a colander on your head increases comical performance by 12.4%.",
   "If your jokes are failing, claim your keyboard translation was delayed. Or blame the raccoon who wrote the database.",
-  "Warning: Extreme laughter might trigger spontaneous brain cell splitting. Proceed at your own comedy risk."
+  "Warning: Extreme laughter might trigger spontaneous brain cell splitting. Proceed at your own comedy risk.",
+  "If your score is low, try whispering sweet coding secrets to the hosting robot.",
+  "Science shows that spelling mistakes make your answer 28% more raserig and chaotic.",
+  "Pressing reaction buttons multiple times increases your CPU's heart-rate. It is completely useless but highly satisfying.",
+  "Spectators are legally permitted to judge others. In fact, it is encouraged by the Intergalactic Committee of Sitcombators.",
+  "In case of low brain activity, please restart your central nervous system or consume a delicious savoury tart."
 ];
 
 export default function LobbyView({
@@ -49,40 +54,40 @@ export default function LobbyView({
   const spectators = players.filter(p => p.isSpectator);
 
   const totalActivePlayers = activePlayers.length;
-  const isStartDisabled = totalActivePlayers < 3 || totalActivePlayers > 5;
+  const isStartDisabled = totalActivePlayers < 3 || totalActivePlayers > 6;
 
   return (
-    <div className="w-full max-w-lg mx-auto p-4 flex flex-col items-center">
+    <div className="w-full max-w-lg mx-auto p-3 flex flex-col items-center">
       
       {/* Header Room Code Billboard */}
-      <div className="bg-[#FFF] border-4 border-black p-5 rounded-xl w-full text-center shadow-retro mb-5 relative mt-2 text-black">
-        <span className="absolute -top-4 left-1/2 transform -translate-x-1/2 text-xs font-black bg-[#F472B6] text-white border-3 border-[#000000] px-4 py-1 rounded-lg uppercase shadow-[2px_2px_0px_#000] whitespace-nowrap">
+      <div className="bg-[#FFF] border-4 border-black p-4 rounded-xl w-full text-center shadow-retro mb-4 relative mt-2 text-black">
+        <span className="absolute -top-4 left-1/2 transform -translate-x-1/2 text-2xs font-black bg-[#F472B6] text-white border-2 border-[#000000] px-3 py-0.5 rounded-lg uppercase shadow-[2.5px_2.5px_0px_#000] whitespace-nowrap">
           ROOM CODE LOBBY
         </span>
-        <h2 className="text-5xl font-extrabold tracking-widest mt-2 bg-black text-[#A3E635] py-3.5 px-6 rounded-xl border-4 border-black flex items-center justify-center font-mono">
+        <h2 className="text-4xl md:text-5xl font-extrabold tracking-widest mt-1 bg-black text-[#A3E635] py-2 md:py-3.5 px-6 rounded-xl border-3 border-black flex items-center justify-center font-mono leading-none">
           {roomCode}
         </h2>
-        <p className="text-xs font-black text-black mt-3 uppercase tracking-wider">
+        <p className="text-[10px] font-black text-black mt-2 uppercase tracking-wider">
           SHARE THIS CODE TO CONNECT SYNAPSES!
         </p>
       </div>
 
       {/* Main Connected Players List container */}
-      <div className="w-full bg-white text-black rounded-xl p-6 border-6 border-black shadow-[12px_12px_0px_0px_#000000] flex flex-col gap-4">
+      <div className="w-full bg-white text-black rounded-xl p-4 sm:p-5 border-4 sm:border-5 border-black shadow-[8px_8px_0px_0px_#000000] flex flex-col gap-3">
         
-        <div className="flex items-center justify-between border-b-4 border-black pb-3">
-          <h3 className="text-base font-black text-black uppercase tracking-wider flex items-center gap-2">
-            <Users className="w-5 h-5 text-black shrink-0" /> 
-            PLAYERS CONNECTED ({totalActivePlayers}/5)
+        <div className="flex items-center justify-between border-b-3 border-black pb-2.5">
+          <h3 className="text-sm sm:text-base font-black text-black uppercase tracking-wider flex items-center gap-1.5">
+            <Users className="w-4 h-4 text-black shrink-0" /> 
+            PLAYERS CONNECTED ({totalActivePlayers}/6)
           </h3>
           
-          <span className="text-[10px] bg-[#FDE047] text-black border-2 border-black px-2.5 py-1 rounded-lg font-black uppercase shadow-[1px_1px_rgba(0,0,0,1)]">
+          <span className="text-[9px] bg-[#FDE047] text-black border-2 border-black px-2 py-0.5 rounded-lg font-black uppercase shadow-[1px_1px_rgba(0,0,0,1)]">
             LOBBY
           </span>
         </div>
 
         {/* List of Players */}
-        <div className="grid grid-cols-1 gap-3 my-1">
+        <div className="grid grid-cols-1 gap-2.5 my-0.5">
           {activePlayers.map((p, idx) => {
             const isMe = p.id === player.id;
             const avatars = ["🦊", "🐙", "🦖", "🦄", "🤖"];
@@ -96,50 +101,50 @@ export default function LobbyView({
             return (
               <motion.div
                 key={p.id}
-                initial={{ opacity: 0, x: -15 }}
+                initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: idx * 0.05 }}
-                className={`flex items-center justify-between p-3 px-4 rounded-xl border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${
+                className={`flex items-center justify-between p-2.5 px-3.5 rounded-xl border-3 sm:border-4 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] ${
                   isMe ? "bg-[#FDE047]/15 border-black" : "bg-white"
                 }`}
               >
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2.5">
                   {/* Avatar Sphere of the Vibrant Palette style */}
-                  <div className={`w-11 h-11 rounded-full border-3 border-black flex items-center justify-center text-2xl ${targetBg} shadow-[2px_2px_0_#000]`}>
+                  <div className={`w-9 h-9 rounded-full border-2 border-black flex items-center justify-center text-xl ${targetBg} shadow-[1.5px_1.5px_0_#000] shrink-0`}>
                     {targetAvatar}
                   </div>
                   <div className="flex flex-col text-left">
-                    <span className="font-extrabold text-black tracking-wide text-md flex items-center gap-1.5">
-                      {p.name} {isMe && <span className="text-[#6D28D9] font-black text-xs">(YOU)</span>}
+                    <span className="font-extrabold text-black tracking-wide text-sm flex items-center gap-1 sm:gap-1.5 leading-none">
+                      {p.name} {isMe && <span className="text-[#6D28D9] font-black text-2xs">(YOU)</span>}
                     </span>
-                    <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wide">
+                    <span className="text-[9px] text-gray-500 font-bold uppercase tracking-wide mt-0.5">
                       Synapse Online
                     </span>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   {/* Transfer Host button - Only shown to hosts who want to give crown to someone else */}
                   {player.isHost && !isMe && (
                     <button
                       onClick={() => onTransferHost(p.id)}
                       type="button"
                       title="Transfer host role"
-                      className="flex items-center gap-1 bg-stone-100 hover:bg-yellow-250 hover:border-yellow-400 text-[9px] font-black border-2 border-black p-1 px-2 rounded-lg transition"
+                      className="flex items-center gap-1 bg-stone-100 hover:bg-yellow-250 hover:border-yellow-400 text-[8px] font-black border-2 border-black p-0.5 px-1.5 rounded-md transition cursor-pointer"
                     >
-                      <Crown className="w-3 h-3 text-amber-500 fill-current" />
+                      <Crown className="w-2.5 h-2.5 text-amber-500 fill-current" />
                       <span>GIVE HOST</span>
                     </button>
                   )}
                   
                   {p.isHost ? (
-                    <span className="text-[10px] uppercase font-black tracking-widest bg-[#F472B6] text-white px-2.5 py-1 rounded-lg border-2 border-black shadow-[2px_2px_0px_rgba(0,0,0,1)] flex items-center gap-1">
-                      <Crown className="w-3.5 h-3.5 text-yellow-300 fill-current" />
+                    <span className="text-[9px] uppercase font-black tracking-widest bg-[#F472B6] text-white px-2 py-0.5 rounded-lg border-2 border-black shadow-[1.5px_1.5px_0px_rgba(0,0,0,1)] flex items-center gap-0.5">
+                      <Crown className="w-3 h-3 text-yellow-300 fill-current" />
                       HOST
                     </span>
                   ) : (
-                    <div className="flex items-center gap-1 bg-black text-white py-1 px-2 rounded-lg border-2 border-black text-[9px] font-black select-none">
-                      <span className="w-2.5 h-2.5 rounded-full border border-black bg-[#A3E635] animate-pulse" />
+                    <div className="flex items-center gap-1 bg-black text-white py-0.5 px-1.5 rounded-lg border-2 border-black text-[8px] font-black select-none">
+                      <span className="w-2 h-2 rounded-full border border-black bg-[#A3E635] animate-pulse" />
                       READY
                     </div>
                   )}

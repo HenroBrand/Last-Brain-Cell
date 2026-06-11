@@ -180,12 +180,12 @@ export default function App() {
   };
 
   // Create game lobby
-  const handleCreateRoom = async (playerName: string, avatar: string, isSpectator: boolean) => {
+  const handleCreateRoom = async (playerName: string, avatar: string, isSpectator: boolean, maxRounds: number, gameMode: "regular" | "spicy") => {
     try {
       const res = await fetch(`${API}/api/room/create`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ playerName, avatar, isSpectator, language: 'EN' })
+        body: JSON.stringify({ playerName, avatar, isSpectator, language: 'EN', maxRounds, gameMode })
       });
       const data = await res.json();
       if (!res.ok) {
@@ -250,6 +250,13 @@ export default function App() {
 
   const handleLeaveLobby = () => {
     if (confirm("Are you sure you want to abandon this brain cell reserve?")) {
+      if (roomCode && player) {
+        fetch(`${API}/api/room/${roomCode}/action`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ playerId: player.id, action: "LEAVE_ROOM" })
+        }).catch((err) => console.warn("Failed to notify leave:", err));
+      }
       clearCachedSession();
     }
   };
@@ -380,6 +387,7 @@ export default function App() {
             commentary={roomState.commentary}
             winnerId={roomState.winnerId}
             onRematch={handleRematch}
+            onBackToLobby={handleLeaveLobby}
           />
         );
 

@@ -5,7 +5,7 @@
 
 import React, { useEffect, useRef } from "react";
 import { motion } from "motion/react";
-import { Award, Zap, Smile, BookOpen, Skull, RefreshCw, Trophy, BarChart3 } from "lucide-react";
+import { Award, Zap, Smile, BookOpen, Skull, RefreshCw, Trophy, BarChart3, Home } from "lucide-react";
 import { Player, PlayerStats } from "../types.js";
 import { soundSynthesizer } from "../utils/audio.js";
 
@@ -16,6 +16,7 @@ interface EndGameViewProps {
   commentary: string;
   winnerId: string | null;
   onRematch: () => void;
+  onBackToLobby: () => void;
 }
 
 export default function EndGameView({
@@ -24,7 +25,8 @@ export default function EndGameView({
   statistics,
   commentary,
   winnerId,
-  onRematch
+  onRematch,
+  onBackToLobby
 }: EndGameViewProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -171,10 +173,10 @@ export default function EndGameView({
             };
 
             // Custom icon mapping based on computed comedy certificates
-            const isCertIdiot = st.award === "Certified Idiot";
-            const isGenius = st.award === "Biggest Genius";
-            const isMenace = st.award === "Biggest Menace";
-            const isDanger = st.award === "Most Dangerous Thinker";
+            const isCertIdiot = st.award === "Certified Idiot" || st.award === "Gesertifiseerde Idioot";
+            const isGenius = st.award === "Biggest Genius" || st.award === "Grootste Genie";
+            const isMenace = st.award === "Biggest Menace" || st.award === "Grootste Skelm" || st.award === "Chaos Kampioen" || st.award === "Chaos Champion";
+            const isDanger = st.award === "Most Dangerous Thinker" || st.award === "Mees Gevaarlike Denker";
 
             return (
               <motion.div
@@ -216,6 +218,13 @@ export default function EndGameView({
                   </span>
                 </div>
 
+                {/* Funny customized performance description box */}
+                {st.performanceDescription && (
+                  <div className="mt-2 text-xs font-black text-slate-800 bg-amber-50 border-2 border-black p-2.5 rounded-lg italic leading-relaxed select-none relative shadow-[2px_2px_0px_#000000]">
+                    💡 "{st.performanceDescription}"
+                  </div>
+                )}
+
                 {/* Sub-bento-grid of individual performance metrics */}
                 <div className="grid grid-cols-2 gap-2 mt-2.5 font-mono text-[9px] md:text-[10px] text-slate-500 font-bold uppercase select-none">
                   <div className="bg-white p-2 rounded-lg border-2 border-black">
@@ -246,31 +255,44 @@ export default function EndGameView({
         </div>
       </div>
 
-      {/* Rematch capabilities */}
-      {player.isHost && (
-        <div className="w-full max-w-sm relative z-10 text-center">
+      {/* Button controls panel */}
+      <div className="w-full max-w-sm flex flex-col gap-4 relative z-10 text-center select-none pb-6">
+        
+        {/* Host Rematch */}
+        {player.isHost && (
           <button
             onClick={onRematch}
             id="rematch-init-btn"
-            className="w-full bg-[#A3E635] text-black border-4 border-black py-4 rounded-xl font-black text-lg hover:bg-[#8cdc21] shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition flex items-center justify-center gap-2 cursor-pointer pointer-events-auto text-center"
+            className="w-full bg-[#A3E635] text-black border-4 border-black py-4 rounded-xl font-black text-lg hover:bg-[#8cdc21] shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition flex items-center justify-center gap-2 cursor-pointer pointer-events-auto text-center font-sans"
           >
             <RefreshCw className="w-5 h-5 animate-spin-reverse" /> 
             RE-ENTER ARENA (REMATCH)
           </button>
-        </div>
-      )}
+        )}
 
-      {/* Guest rematch warning banner */}
-      {!player.isHost && (
-        <div className="mt-2 p-4 rounded-xl bg-black border-4 border-black text-center text-[#FBBF24] text-xs font-black max-w-sm flex flex-col gap-1 relative z-10 select-none shadow-retro-sm">
-          <span className="animate-pulse text-white font-black uppercase tracking-wider">
-            WAITING ON HOST TO DECLARE REMATCH
-          </span>
-          <span className="text-stone-300 text-[10px] md:text-xs">
-            Only {players.find(p => p.isHost)?.name || "The Host"} can restart the round server. Hang tight in the awards room.
-          </span>
-        </div>
-      )}
+        {/* Guest rematch warning banner */}
+        {!player.isHost && (
+          <div className="p-4 rounded-xl bg-black border-4 border-black text-center text-[#FBBF24] text-xs font-black w-full flex flex-col gap-1 relative z-10 select-none shadow-retro-sm">
+            <span className="animate-pulse text-white font-black uppercase tracking-wider">
+              WAITING ON HOST TO DECLARE REMATCH
+            </span>
+            <span className="text-stone-300 text-[10px] md:text-xs">
+              Only {players.find(p => p.isHost)?.name || "The Host"} can restart the round server. Hang tight or leave to start your own lobby.
+            </span>
+          </div>
+        )}
+
+        {/* Back to Lobby Button */}
+        <button
+          onClick={onBackToLobby}
+          id="back-to-lobby-btn"
+          className="w-full bg-[#FF4785] text-white border-4 border-black py-3.5 rounded-xl font-black text-md hover:bg-[#ff246c] shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition flex items-center justify-center gap-2 cursor-pointer pointer-events-auto text-center font-sans uppercase"
+        >
+          <Home className="w-4 h-4" />
+          Leave Arena & Go to Lobby
+        </button>
+
+      </div>
 
     </div>
   );

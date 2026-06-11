@@ -9,6 +9,7 @@ import cors from "cors";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
 import { GamePhase, Player, Challenge, RoundAnswer, PlayerStats, RoomState, EmojiBroadcast } from "./src/types.js";
+import { SPICY_PROMPTS } from "./src/spicyPrompts.js";
 
 const app = express();
 const PORT = parseInt(process.env.PORT || "3000", 10);
@@ -36,6 +37,7 @@ interface RoomSession {
   createdAt: number;
   emojiReactions: EmojiBroadcast[];
   language: 'EN' | 'AF';
+  gameMode: 'regular' | 'spicy';
 }
 
 const rooms: { [code: string]: RoomSession } = {};
@@ -105,7 +107,15 @@ function getGeminiClient(): GoogleGenAI | null {
 }
 
 // Generates an absurd scenario using Gemini or comedic fallbacks
-async function generateAiChallenge(usedScenarios: string[], language: 'EN' | 'AF' = 'EN'): Promise<Challenge> {
+async function generateAiChallenge(usedScenarios: string[], language: 'EN' | 'AF' = 'EN', gameMode: 'regular' | 'spicy' = 'regular'): Promise<Challenge> {
+  if (gameMode === "spicy") {
+    // Select an unused spicy prompt if possible, else any spicy prompt
+    const available = SPICY_PROMPTS.filter(s => !usedScenarios.includes(s.scenario));
+    const pool = available.length > 0 ? available : SPICY_PROMPTS;
+    const randomIndex = Math.floor(Math.random() * pool.length);
+    return pool[randomIndex];
+  }
+
   const client = getGeminiClient();
   if (client) {
     try {
@@ -378,6 +388,39 @@ setInterval(async () => {
       continue;
     }
 
+    // Auto-prune inactive players who haven't polled for over 15 seconds
+    for (const pid in room.players) {
+      const p = room.players[pid];
+      if (now - p.lastActive > 15000) {
+        console.log(`Pruning player ${p.name} due to 15s inactivity`);
+        const wasHost = p.isHost;
+        delete room.players[pid];
+        if (room.answers[pid] !== undefined) {
+          delete room.answers[pid];
+        }
+        if (room.votes[pid] !== undefined) {
+          delete room.votes[pid];
+        }
+
+        // Host reassignment if needed
+        const remaining = Object.values(room.players);
+        if (remaining.length > 0 && wasHost) {
+          const nextHost = remaining[0];
+          nextHost.isHost = true;
+          room.commentary = room.language === 'AF'
+            ? `${nextHost.name} is nou die amptelike Gasheer na 'n konneksie-time-out!`
+            : `${nextHost.name} is now host after a connection timeout!`;
+        }
+      }
+    }
+
+    // Delete room immediately if absolutely empty
+    if (Object.keys(room.players).length === 0) {
+      console.log(`Deleting empty room ${code}`);
+      delete rooms[code];
+      continue;
+    }
+
     // Filter out old emoji reactions to keep payload small
     room.emojiReactions = room.emojiReactions.filter(r => now - r.timestamp < 6000);
 
@@ -401,6 +444,37 @@ setInterval(async () => {
         if ((submissionCount >= connectedCount && connectedCount >= 3) || room.timerRemaining === 0) {
           console.log(`Room ${code} advancing from SUBMISSION to REVEAL`);
           
+          // Guarantee EVERY active non-spectating player has an answer in room.answers to ensure everyone's answers show
+          activeNonSpectators.forEach(p => {
+            if (!room.answers[p.id] || room.answers[p.id].trim() === "") {
+              const sillyAF = [
+                "Ek het my brein in die toilet laat val.",
+                "Ek was te besig om na my toonnaels te kyk.",
+                "My hond het my antwoord geëet.",
+                "Geen gedagtes gevind nie, net wind.",
+                "Souttert resepte het my aandag gevang.",
+                "Ek het skoon vergeet hoe letters werk.",
+                "My laaste breinsel het sopas gesterf.",
+                "Brein pap, stuur asseblief help.",
+                "Besig om te dink... maar die konneksie is swak."
+              ];
+              const sillyEN = [
+                "My brain cells filed a union strike.",
+                "Error 404: Answer could not be rendered.",
+                "I was busy training my pet dust bunny.",
+                "Nothing but dial-up noises in my head.",
+                "My goldfish promised to write this, but lied.",
+                "Staring blankly at the wall since 10,000 BC.",
+                "My brain cells are currently on sabbatical.",
+                "I tried to think but got a syntax error.",
+                "Counting sheep... but they keep running away."
+              ];
+              const list = room.language === "AF" ? sillyAF : sillyEN;
+              const randomSilly = list[Math.floor(Math.random() * list.length)];
+              room.answers[p.id] = randomSilly;
+            }
+          });
+
           // Scramble submitted answers anonymously
           const list = Object.keys(room.answers).map(pid => ({
             playerId: pid,
@@ -530,7 +604,7 @@ setInterval(async () => {
 
 // Create Room
 app.post("/api/room/create", (req, res) => {
-  const { playerName, avatar, isSpectator, language } = req.body;
+  const { playerName, avatar, isSpectator, language, maxRounds, gameMode } = req.body;
   if (!playerName || typeof playerName !== "string") {
     return res.status(400).json({ error: "Invalid player name" });
   }
@@ -538,6 +612,12 @@ app.post("/api/room/create", (req, res) => {
   const code = generateRoomCode();
   const hostId = "p_" + Math.random().toString(36).substr(2, 9);
   const roomLang = language === 'AF' ? 'AF' : 'EN';
+
+  let parsedMaxRounds = parseInt(maxRounds, 10);
+  if (isNaN(parsedMaxRounds) || parsedMaxRounds < 5 || parsedMaxRounds > 15) {
+    parsedMaxRounds = 10;
+  }
+  const verifiedGameMode = gameMode === "spicy" ? "spicy" : "regular";
 
   const newPlayer: Player & { lastActive: number } = {
     id: hostId,
@@ -557,7 +637,8 @@ app.post("/api/room/create", (req, res) => {
     players: { [hostId]: newPlayer },
     phase: 'LOBBY',
     round: 0,
-    maxRounds: 10,
+    maxRounds: parsedMaxRounds,
+    gameMode: verifiedGameMode,
     challenge: null,
     answers: {},
     shuffledAnswers: [],
@@ -608,7 +689,7 @@ app.post("/api/room/join", (req, res) => {
   }
 
   const nonSpectators = Object.values(room.players).filter(p => !p.isSpectator);
-  if (!isSpectator && nonSpectators.length >= 5) {
+  if (!isSpectator && nonSpectators.length >= 6) {
     return res.status(400).json({ error: "Room is full of active players! You can join as a SPECTATOR instead." });
   }
 
@@ -715,7 +796,7 @@ app.post("/api/room/:code/action", async (req, res) => {
         room.answers = {};
         room.votes = {};
 
-        generateAiChallenge([], room.language).then(challenge => {
+        generateAiChallenge([], room.language, room.gameMode).then(challenge => {
           room.challenge = challenge;
           room.commentary = room.language === 'AF' ? "Kategorie gereed! Lees noukeurig, dinge raak nou heeltemal gek." : "Scenario ready! Read carefully, things are about to get absurd.";
         });
@@ -832,20 +913,52 @@ app.post("/api/room/:code/action", async (req, res) => {
           const topPlayer = sortedPlayers[0];
           room.winnerId = topPlayer ? topPlayer.id : null;
 
-          // Map comedy roles based on stats counters
+          // Map comedy roles and funny individual performance descriptions based on stats counters and placements
+          const sortedRankedIds = sortedPlayers.map(p => p.id);
           Object.keys(room.players).forEach(pid => {
             const st = room.statistics?.[pid];
             if (st) {
-              if (pid === room.winnerId) {
+              const rank = sortedRankedIds.indexOf(pid) + 1;
+              const isWinner = pid === room.winnerId;
+
+              // Determine primary role award
+              if (isWinner) {
                 st.award = room.language === 'AF' ? "Chaos Kampioen" : "Chaos Champion";
-              } else if (st.unhingedCount > st.creativeCount && st.unhingedCount > 1) {
+              } else if (st.unhingedCount > st.creativeCount && st.unhingedCount >= 1) {
                 st.award = room.language === 'AF' ? "Mees Gevaarlike Denker" : "Most Dangerous Thinker";
-              } else if (st.creativeCount > st.unhingedCount && st.creativeCount > 1) {
+              } else if (st.creativeCount > st.unhingedCount && st.creativeCount >= 1) {
                 st.award = room.language === 'AF' ? "Grootste Genie" : "Biggest Genius";
               } else if (st.totalVotesReceived === 0) {
                 st.award = room.language === 'AF' ? "Gesertifiseerde Idioot" : "Certified Idiot";
               } else {
                 st.award = room.language === 'AF' ? "Grootste Skelm" : "Biggest Menace";
+              }
+
+              // Apply funny customized individual descriptions based on stats, ranks and language
+              if (room.language === 'AF') {
+                if (isWinner) {
+                  st.performanceDescription = `Kroon hom! Gesteel die wenplek op Plek #1 met die verbluffende telling van ${st.totalVotesReceived} stemme. Sy brein is dalk klein, maar die energie is super-gelaat en absoluut chaoties!`;
+                } else if (st.award === "Mees Gevaarlike Denker") {
+                  st.performanceDescription = `Plek #${rank}. Met ${st.unhingedCount} raserige rondtes van absolute chaos is jou gedagtes 'n nasionale veiligheidsgevaar. Te veel asyn op jou skyfies en hopeloos té onvoorspelbaar!`;
+                } else if (st.award === "Grootste Genie") {
+                  st.performanceDescription = `Plek #${rank}. Jou kop is gevul met gevorderde konsepte wat wetenskaplikes nog nie verstaan nie. Baie kreatief, maar dadelik te vreemd vir normale mense om te volg!`;
+                } else if (st.award === "Gesertifiseerde Idioot") {
+                  st.performanceDescription = `Plek #${rank}. Kry vir jou 'n troosprys! Net soos die res van ons het jy met 0 stemme weggeloop. Jou brein werk op lae-krag wekkerradio batterye, maar ons is lief vir jou.`;
+                } else {
+                  st.performanceDescription = `Plek #${rank}. Standvastige raserigheid wat ${st.totalVotesReceived} stemme gekry het! Jy het geveg soos 'n woedende ratel in 'n klein vuurhoutjieboksie. Geen vrees nie!`;
+                }
+              } else {
+                if (isWinner) {
+                  st.performanceDescription = `👑 Grand Champion (Rank #1)! Hoarded the glory with ${st.totalVotesReceived} total votes. Clearly possesses the densest, most magnificent, and bizarre single brain cell in this lobby. All hail the Overlord!`;
+                } else if (st.award === "Most Dangerous Thinker") {
+                  st.performanceDescription = `Placed #${rank}. Triggered ${st.unhingedCount} hazardous warnings. Your unhinged thoughts are scientifically unsafe for civil society and have been reported to authorities!`;
+                } else if (st.award === "Biggest Genius") {
+                  st.performanceDescription = `Placed #${rank}. Possessed a highly creative brain with ${st.creativeCount} spark lines, yet completely failed to transform that raw high-IQ brilliance into an actual victory. Classic academy blunder.`;
+                } else if (st.award === "Certified Idiot") {
+                  st.performanceDescription = `Placed #${rank}. Literally untouched by greatness with exactly 0 votes. Your brain operates on the pure dial-up hum of a 1995 microwave oven, but you brought great energy.`;
+                } else {
+                  st.performanceDescription = `Placed #${rank}. A premium agent of general mischief. Obtained ${st.totalVotesReceived} votes of chaos and proved to be an absolute menace to the visual sanity of our scoreboard.`;
+                }
               }
             }
           });
@@ -874,7 +987,7 @@ app.post("/api/room/:code/action", async (req, res) => {
           const used = Object.values(rooms).filter(r => r.code === code).map(r => r.challenge?.scenario || "").filter(Boolean);
 
           room.commentary = room.language === 'AF' ? `Besig om Rondte ${room.round} se uitdaging te bou...` : `Generating Round ${room.round} impossible challenge...`;
-          generateAiChallenge(used, room.language).then(challenge => {
+          generateAiChallenge(used, room.language, room.gameMode).then(challenge => {
             room.challenge = challenge;
             room.commentary = room.language === 'AF' ? `Rondte ${room.round} is aktief! Laat daai breinselle vonk.` : `Round ${room.round} is live! Keep those synapses firing.`;
           });
@@ -886,6 +999,7 @@ app.post("/api/room/:code/action", async (req, res) => {
           return res.status(400).json({ error: "Missing emoji string" });
         }
         const emojiReaction: EmojiBroadcast = {
+          id: `emo_${playerId}_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
           playerId,
           playerName: player.name,
           emoji: payload.emoji,
@@ -896,6 +1010,28 @@ app.post("/api/room/:code/action", async (req, res) => {
         // Update local player state
         player.emojiReaction = payload.emoji;
         player.emojiTime = Date.now();
+        break;
+
+      case "LEAVE_ROOM":
+        delete room.players[playerId];
+        if (room.answers[playerId] !== undefined) {
+          delete room.answers[playerId];
+        }
+        if (room.votes[playerId] !== undefined) {
+          delete room.votes[playerId];
+        }
+
+        const activeRemaining = Object.values(room.players);
+        if (activeRemaining.length === 0) {
+          delete rooms[code];
+        } else if (player.isHost) {
+          // Transfer host to first active player
+          const firstLeftId = activeRemaining[0].id;
+          room.players[firstLeftId].isHost = true;
+          room.commentary = room.language === 'AF'
+            ? `${room.players[firstLeftId].name} is nou die nuwe amptelike Gasheer na 'n vertrek!`
+            : `${room.players[firstLeftId].name} is now host after a player left!`;
+        }
         break;
 
       case "REMATCH":

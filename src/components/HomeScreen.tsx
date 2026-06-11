@@ -10,14 +10,14 @@ import { soundSynthesizer } from "../utils/audio.js";
 
 interface HomeScreenProps {
   onJoinRoom: (playerName: string, roomCode: string, avatar: string, isSpectator: boolean) => void;
-  onCreateRoom: (playerName: string, avatar: string, isSpectator: boolean) => void;
+  onCreateRoom: (playerName: string, avatar: string, isSpectator: boolean, maxRounds: number, gameMode: "regular" | "spicy") => void;
   errorMsg: string | null;
 }
 
 const AVATARS = ["🦊", "🦁", "🐯", "🐼", "🐨", "🦄", "🦖", "🐙", "🦀", "🍍", "🥑", "🌶️"];
 
-const ADJECTIVES_EN = ["Soggy", "Salty", "Greasy", "Turbulent", "Confused", "Dancing", "Squeaky", "Flaming", "Spicy", "Sassy", "Explosive", "Sleepy", "Rabid", "Absurd", "Clueless", "Wobbly"];
-const NOUNS_EN = ["Potato", "Waffle", "Sausage", "Bacon", "Donut", "Raccoon", "Mime", "Goose", "Pigeon", "Microwave", "Koala", "Snail", "Ostrich", "Braincell", "Noodle", "Muffin"];
+const ADJECTIVES_EN = ["Soggy", "Salty", "Greasy", "Turbulent", "Confused", "Dancing", "Squeaky", "Flaming", "Spicy", "Sassy", "Explosive", "Sleepy", "Rabid", "Absurd", "Clueless", "Wobbly", "Crusty", "Shaky", "Bumbling", "Gassy", "Pickled", "Dumbfounded", "Brain-dead"];
+const NOUNS_EN = ["Potato", "Waffle", "Sausage", "Bacon", "Donut", "Raccoon", "Mime", "Goose", "Pigeon", "Microwave", "Koala", "Snail", "Ostrich", "Braincell", "Noodle", "Muffin", "Toenail", "Mustard", "Nugget", "Sock", "Footbox", "Eggplant", "Salami", "Dustbunny"];
 
 export default function HomeScreen({ onJoinRoom, onCreateRoom, errorMsg }: HomeScreenProps) {
   const [name, setName] = useState("");
@@ -25,6 +25,8 @@ export default function HomeScreen({ onJoinRoom, onCreateRoom, errorMsg }: HomeS
   const [isMuted, setIsMuted] = useState(soundSynthesizer.getMuted());
   const [avatar, setAvatar] = useState("🦊");
   const [isSpectator, setIsSpectator] = useState(false);
+  const [maxRounds, setMaxRounds] = useState(10);
+  const [gameMode, setGameMode] = useState<"regular" | "spicy">("regular");
 
   const toggleSound = () => {
     const nextMute = !isMuted;
@@ -54,33 +56,33 @@ export default function HomeScreen({ onJoinRoom, onCreateRoom, errorMsg }: HomeS
   };
 
   return (
-    <div className="w-full max-w-md mx-auto p-4 flex flex-col items-center justify-center min-h-[85vh]">
+    <div className="w-full max-w-md mx-auto p-3 flex flex-col items-center justify-start min-h-screen md:min-h-0 py-3">
       
       {/* Cartoon Title / Logo */}
-      <div className="relative mb-6 text-center mt-2">
+      <div className="relative mb-4 text-center mt-1">
         <motion.div
-          animate={{ rotate: [-2, 2, -2], scale: [1, 1.03, 1] }}
+          animate={{ rotate: [-1.5, 1.5, -1.5], scale: [1, 1.02, 1] }}
           transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
           className="relative inline-block"
         >
-          <div className="bg-[#FDE047] border-4 border-black px-6 py-4 rounded-xl shadow-retro">
-            <h1 className="text-4xl md:text-5xl font-black tracking-tighter text-black select-none uppercase">
+          <div className="bg-[#FDE047] border-3 md:border-4 border-black px-4 py-2 rounded-xl shadow-retro">
+            <h1 className="text-3xl md:text-5.5xl font-black tracking-tighter text-black select-none uppercase leading-none">
               LAST BRAIN CELL
             </h1>
-            <p className="text-xs font-black uppercase tracking-wider text-black mt-1 select-none flex items-center justify-center gap-1">
-              <Sparkles className="w-3.5 h-3.5" /> Comedy Party Game <Sparkles className="w-3.5 h-3.5" />
+            <p className="text-[10px] md:text-xs font-black uppercase tracking-wider text-black mt-0.5 select-none flex items-center justify-center gap-1">
+              <Sparkles className="w-3 h-3" /> Comedy Party Game <Sparkles className="w-3 h-3" />
             </p>
           </div>
           
           {/* Laughing brain helper avatar */}
-          <div className="absolute -top-10 -right-6 text-5xl transform rotate-12 drop-shadow-md select-none">
+          <div className="absolute -top-7 -right-4 text-3xl transform rotate-12 drop-shadow-md select-none">
             🧠⚡
           </div>
         </motion.div>
       </div>
 
       {/* Main card panel - Designed around Vibrant Palette block layouts */}
-      <div className="w-full bg-white text-black rounded-2xl p-6 border-6 border-black shadow-[12px_12px_0px_0px_#000000] flex flex-col gap-4 relative">
+      <div className="w-full bg-white text-black rounded-2xl p-4 sm:p-5 border-4 sm:border-5 border-black shadow-[8px_8px_0px_0px_#000000] flex flex-col gap-3 relative">
         
         {/* Row for Controls (Sound toggle) */}
         <div className="flex items-center justify-between pointer-events-auto">
@@ -106,7 +108,7 @@ export default function HomeScreen({ onJoinRoom, onCreateRoom, errorMsg }: HomeS
         <div className="flex flex-col gap-1.5 text-left mt-2 relative">
           <label htmlFor="player-name" className="text-xs font-black text-black tracking-wide uppercase flex justify-between items-center">
             <span>YOUR FUNNY NAME</span>
-            <span className="text-slate-500 font-bold text-[10px] lowercase">created by Henro Brand</span>
+            <span className="text-slate-500 font-bold text-[10px] lowercase">created by Henro Brand &amp; 1 tired squirrel</span>
           </label>
           <div className="flex gap-2">
             <input
@@ -197,12 +199,70 @@ export default function HomeScreen({ onJoinRoom, onCreateRoom, errorMsg }: HomeS
           </div>
         </div>
 
+        {/* Host Creation Controls */}
+        <div className="bg-purple-100/40 p-3 rounded-xl border-3 border-black flex flex-col gap-2 mt-1">
+          <span className="text-[10px] font-black uppercase text-purple-900 tracking-wider flex items-center gap-1 select-none">
+            ⚙️ HOST LOBBY GAME CONFIGS
+          </span>
+
+          {/* Theme Selector (Regular vs Spicy) */}
+          <div className="flex flex-col gap-1 text-left">
+            <span className="text-[9px] font-black text-neutral-600 uppercase">GAME MODE</span>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setGameMode("regular")}
+                className={`py-1.5 px-3 rounded-lg border-2 font-black text-2xs uppercase cursor-pointer transition ${
+                  gameMode === "regular"
+                    ? "bg-[#60A5FA] text-black border-black shadow-[2px_2px_0_rgba(0,0,0,1)]"
+                    : "bg-white text-stone-600 border-neutral-300 hover:bg-stone-100"
+                }`}
+              >
+                🍎 REGULAR
+              </button>
+              <button
+                type="button"
+                onClick={() => setGameMode("spicy")}
+                className={`py-1.5 px-3 rounded-lg border-2 font-black text-2xs uppercase cursor-pointer transition ${
+                  gameMode === "spicy"
+                    ? "bg-[#EF4444] text-white border-black shadow-[2px_2px_0_rgba(0,0,0,1)] animate-pulse"
+                    : "bg-white text-stone-600 border-[#000]/10 hover:bg-stone-100"
+                }`}
+              >
+                🔥 SPICY
+              </button>
+            </div>
+          </div>
+
+          {/* Rounds limit selection */}
+          <div className="flex flex-col gap-1 text-left mt-0.5">
+            <div className="flex justify-between items-center text-[9px] font-black text-neutral-600 uppercase">
+              <span>NUMBER OF ROUNDS</span>
+              <span className="bg-[#A3E635] text-black border-2 border-black rounded-md px-1.5 py-0.5 text-xs font-mono font-black">{maxRounds}</span>
+            </div>
+            <input
+              type="range"
+              min="5"
+              max="15"
+              step="1"
+              value={maxRounds}
+              onChange={(e) => setMaxRounds(parseInt(e.target.value, 10))}
+              className="w-full h-1.5 bg-neutral-200 rounded-lg appearance-none cursor-pointer accent-purple-600 border border-black"
+            />
+            <div className="flex justify-between items-center text-[8px] text-neutral-500 font-bold px-0.5 select-none">
+              <span>5 MIN</span>
+              <span>10 (DEFAULT)</span>
+              <span>15 MAX</span>
+            </div>
+          </div>
+        </div>
+
         {/* Create room button */}
         <button
-          onClick={() => initAudioAndSubmit(() => onCreateRoom(name, avatar, isSpectator))}
+          onClick={() => initAudioAndSubmit(() => onCreateRoom(name, avatar, isSpectator, maxRounds, gameMode))}
           disabled={!name.trim()}
           id="create-room-btn"
-          className="w-full mt-1 bg-[#FDE047] text-black border-4 border-black py-3.5 rounded-xl font-black text-md hover:bg-[#ebd036] shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] disabled:opacity-40 disabled:cursor-not-allowed transition flex items-center justify-center gap-2 cursor-pointer pointer-events-auto"
+          className="w-full bg-[#FDE047] text-black border-4 border-black py-2.5 rounded-xl font-black text-md hover:bg-[#ebd036] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] disabled:opacity-40 disabled:cursor-not-allowed transition flex items-center justify-center gap-2 cursor-pointer pointer-events-auto"
         >
           CREATE LOBBY ⚡
         </button>
@@ -222,7 +282,7 @@ export default function HomeScreen({ onJoinRoom, onCreateRoom, errorMsg }: HomeS
       </div>
 
       <div className="mt-4 text-black bg-white/25 border-2 border-black/40 rounded-xl px-4 py-2 font-black text-[10px] uppercase tracking-widest text-center max-w-xs select-none relative">
-        <span>🏆 Ideal for 3 - 5 players. Grab your friends and see who has the funniest solutions left.</span>
+        <span>🏆 Ideal for 3 - 6 players. Grab your friends and see who has the funniest solutions left.</span>
         <div className="text-[8px] font-bold text-black/50 lowercase mt-1 tracking-normal font-sans">
           Created by Henro Brand
         </div>
