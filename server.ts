@@ -74,35 +74,49 @@ function getGeminiClient(): GoogleGenAI | null {
   return aiClient;
 }
 
-// Generates an absurd scenario using static file lookup (never generates new ones, only translates for Afrikaans if requested)
+// Generates an absurd scenario using static file lookup
 async function generateAiChallenge(usedScenarios: string[], language: 'EN' = 'EN', gameMode: 'regular' | 'spicy' = 'regular'): Promise<Challenge> {
-  // 1. Pick the base pool
   const pool = gameMode === "spicy" ? SPICY_PROMPTS : CHALLENGES;
-
-  // 2. Select randomly among those not in usedScenarios
   const available = pool.filter(c => !usedScenarios.includes(c.scenario));
   const selectPool = available.length > 0 ? available : pool;
   const randomIndex = Math.floor(Math.random() * selectPool.length);
   const chosen = selectPool[randomIndex];
-
   return chosen;
 }
 
-// Generate funny AI commentary for scoreboard or round end
+// Generate funny AI commentary for scoreboard - completely fresh each time, no fallbacks
 async function generateAiCommentary(scenario: string, submissionsAndVotes: { name: string; answer: string; votes: number }[], language: 'EN' = 'EN'): Promise<string> {
   const client = getGeminiClient();
   const summaryString = submissionsAndVotes.map(s => `"${s.name}" said: "${s.answer}" (gained ${s.votes} votes)`).join("\n");
-  
+
   if (client) {
     try {
-      let prompt = "";
-      prompt = `You are the savage, insult-heavy, and hilariously outrageous AI host of the comedy party game "Last Brain Cell".
-Your job is to ROAST the players' replies mercilessly with zero holding back! Be blunt, highly sarcastic, and say truly outrageous, savage things directly referencing specific players and their specific written answers. Make fun of their lack of brain cells, their low-effort vocabulary, or their weird logic. Include brief brain-cell and neural failure puns where possible!
-The round's prompt was: "${scenario}"
-Here are the submissions written by the human players, along with the votes they received:
+      const prompt = `You are the absolute most savage, unhinged, insult-comic AI host of the party game "Last Brain Cell". 
+You have ZERO filter, ZERO empathy, and MAXIMUM cruelty. Your entire purpose is to verbally destroy these players.
+
+The round's absurd challenge was: "${scenario}"
+
+Here are the players' actual submissions and their vote counts:
 ${summaryString}
 
-Write a quick, highly entertaining, single-sentence commentary (max 150 characters) roast. Act like a cruel stand-up comic or GLaDOS on high-voltage bender. Directly link your roast to the text of what players submitted! Make it outrageous, rude, and brutally funny. Never print metadata, headers, or quotes around the whole thing. Just the raw roast itself. Go wild!`;
+RULES FOR YOUR ROAST:
+1. You MUST directly reference specific players by name and quote or describe their ACTUAL answers - do NOT speak in generics
+2. Be brutally insulting about their intelligence, creativity, and life choices
+3. Mock the losers mercilessly - point out exactly why their answers were garbage
+4. Give backhanded "praise" to the winner that still insults them
+5. Use brain cell / neuron / IQ jokes
+6. Reference how their answers relate (or fail to relate) to the scenario
+7. Maximum 200 characters
+8. NO quotes around the entire response
+9. NO metadata, headers, or formatting
+10. Raw, unfiltered roast only. Go absolutely feral.
+
+Examples of the energy:
+- "Alex thought 'potato gun' was a valid heist tool. That's not creativity, that's a grocery list from a prison break."
+- "Sarah's answer got 0 votes because even her own brain cells filed a restraining order against that thought."
+- "Jordan won with 'seduce the guard with interpretive dance' - congratulations, you peaked in kindergarten."
+
+Now ROAST THEM:`;
 
       const response = await client.models.generateContent({
         model: "gemini-3.5-flash",
@@ -121,17 +135,21 @@ Write a quick, highly entertaining, single-sentence commentary (max 150 characte
     }
   }
 
-  // Comedic fallback comments
-  if (submissionsAndVotes.length === 0) return "No answers submitted. Did everyone lose their last remaining brain cell?";
+  // Only if Gemini completely fails - generate a dynamic fallback based on actual data
+  if (submissionsAndVotes.length === 0) {
+    return "No answers submitted. Did everyone's brain cells simultaneously file for unemployment?";
+  }
+
   const winner = submissionsAndVotes.reduce((max, s) => (s.votes > max.votes ? s : max), submissionsAndVotes[0]);
-  const fallbacks = [
-    `${winner.name} somehow negotiated peace with that response. Sarcastic applause.`,
-    `Everyone's answers look like they were written by an agitated raccoon. I love it.`,
-    `${winner.name} dominates with absolute absolute logic. The others? Pure chaos.`,
-    `My RAM is crying reading these answers. Is this the best humanity can do?`,
-    `Let's be real, absolutely nobody came out of this round looking like a genius.`
+  const loser = submissionsAndVotes.reduce((min, s) => (s.votes < min.votes ? s : min), submissionsAndVotes[0]);
+  const randomRoasts = [
+    `${winner.name} scraped together ${winner.votes} vote${winner.votes !== 1 ? 's' : ''} with "${winner.answer.substring(0, 40)}${winner.answer.length > 40 ? '...' : ''}" - mediocrity truly has a champion.`,
+    `${loser.name}'s "${loser.answer.substring(0, 40)}${loser.answer.length > 40 ? '...' : ''}" got ${loser.votes} vote${loser.votes !== 1 ? 's' : ''}. Even a broken clock is right twice a day, but that answer was wrong in every timezone.`,
+    `The scenario was "${scenario.substring(0, 50)}..." and ${winner.name} responded with "${winner.answer.substring(0, 40)}..." - that's not thinking outside the box, that's forgetting the box exists.`,
+    `${winner.name} won with ${winner.votes} votes. Congratulations, you're the smartest kid in a room where everyone forgot how to read.`,
+    `Looking at these answers, I'm not convinced any of you have more than three functioning neurons between the lot of you. ${winner.name} just happened to have the least broken ones.`
   ];
-  return fallbacks[Math.floor(Math.random() * fallbacks.length)];
+  return randomRoasts[Math.floor(Math.random() * randomRoasts.length)];
 }
 
 // Generate fun final award descriptions based on play statistics
@@ -144,13 +162,20 @@ async function generateAiFinalAwards(players: Player[], stats: { [id: string]: P
         return `${p.name}: Total score ${p.score}. Received ${st.totalVotesReceived} total votes. Classified as: Unhinged (${st.unhingedCount} times), Creative (${st.creativeCount} times).`;
       }).join("\n");
 
-      let prompt = "";
-      prompt = `You are the chaotic comedy host of the party game "Last Brain Cell". 
-The game has concluded, and we must hand out final honorary titles and an awards ceremony.
-Here is the player dashboard and their match statistics:
+      const prompt = `You are the chaotic, savage comedy host of "Last Brain Cell". 
+The game is OVER. Time to deliver the final roast.
+
+Player stats:
 ${summary}
 
-Write a rapid, high-energy 2-sentence comedy speech concluding the match and congratulating the winner (who got the highest score). Make it feel like a real Jackbox finale where you playfully roast the participants and celebrate absolute stupidity! Keep it brief (under 200 characters).`;
+Write a rapid, high-energy, brutally funny 2-sentence awards speech. 
+- Congratulate the winner while still insulting them
+- Roast the losers for their pathetic performance  
+- Make fun of their stats
+- Keep it under 250 characters
+- NO quotes around the whole thing
+- NO metadata or headers
+- Raw roast energy only`;
 
       const response = await client.models.generateContent({
         model: "gemini-3.5-flash",
@@ -164,6 +189,7 @@ Write a rapid, high-energy 2-sentence comedy speech concluding the match and con
       console.error("Failed to generate custom awards speech:", e);
     }
   }
+
   const winner = players.reduce((max, p) => (p.score > max.score ? p : max), players[0]);
   return `And there you have it! ${winner?.name || "Someone"} has grabbed the last brain cell and ran for the hills. The rest of you are officially certified idiots. Good day!`;
 }
@@ -206,10 +232,10 @@ function serializeRoomState(room: RoomSession, targetPlayerId?: string): RoomSta
   const scrambledAnswers: RoundAnswer[] = room.shuffledAnswers.map((item, idx) => {
     const record = room.players[item.playerId];
     const votesForThis = Object.keys(room.votes).filter(voterId => room.votes[voterId] === item.playerId);
-    
+
     // Hide names and vote counts if we haven't reached SCOREBOARD phase yet!
     const isSecretPhase = room.phase === 'SUBMISSION' || room.phase === 'REVEAL' || room.phase === 'VOTING';
-    
+
     // In reveal, only show answers up to revealedAnswerIndex
     const isRevealed = room.phase !== 'REVEAL' || idx <= room.revealedAnswerIndex;
 
@@ -307,7 +333,7 @@ setInterval(async () => {
       // Check if timeout or conditions met for auto-advancing (excluding spectators)
       const activeNonSpectators = Object.values(room.players).filter(p => p.lastActive > now - 20000 && !p.isSpectator);
       const connectedCount = activeNonSpectators.length;
-      
+
       if (room.phase === 'SUBMISSION') {
         const submissionCount = Object.keys(room.answers).filter(pid => {
           const p = room.players[pid];
@@ -317,7 +343,7 @@ setInterval(async () => {
         // If everyone (non-spectator) has submitted or timer hit 0
         if ((submissionCount >= connectedCount && connectedCount >= 3) || room.timerRemaining === 0) {
           console.log(`Room ${code} advancing from SUBMISSION to REVEAL`);
-          
+
           // Guarantee EVERY active non-spectating player has an answer in room.answers to ensure everyone's answers show
           activeNonSpectators.forEach(p => {
             if (!room.answers[p.id] || room.answers[p.id].trim() === "") {
@@ -354,8 +380,9 @@ setInterval(async () => {
           room.timerRemaining = 45;
           room.commentary = "Vote now! Select the funniest, most ridiculous option. Self-voting disabled!";
 
-          // Pre-generate AI commentary in background while voting takes place
-          room.preGeneratedCommentary = "";
+          // Start generating AI commentary in background during voting
+          // This will be ready by the time we reach SCOREBOARD
+          room.preGeneratedCommentary = undefined;
           const baseFormatted = Object.keys(room.answers).map(pid => ({
             name: room.players[pid]?.name || "Unidentified Cell",
             answer: room.answers[pid],
@@ -364,16 +391,14 @@ setInterval(async () => {
           generateAiCommentary(room.challenge?.scenario || "", baseFormatted, room.language)
             .then(res => {
               room.preGeneratedCommentary = res;
+              // If we've already reached SCOREBOARD by the time this finishes, update immediately
               if (room.phase === 'SCOREBOARD') {
                 room.commentary = res;
               }
             })
             .catch(err => {
-              console.error("Friction pre-generating commentary:", err);
-              room.preGeneratedCommentary = "You voted faster than my single neuron could spark.";
-              if (room.phase === 'SCOREBOARD') {
-                room.commentary = room.preGeneratedCommentary;
-              }
+              console.error("Pre-generating commentary failed:", err);
+              // Don't set a fallback - let the SCOREBOARD handler deal with it
             });
         }
       } else if (room.phase === 'VOTING') {
@@ -385,7 +410,7 @@ setInterval(async () => {
 
         if ((voteCount >= targetVotes && targetVotes >= 3) || room.timerRemaining === 0) {
           console.log(`Room ${code} advancing from VOTING to SCOREBOARD (calculating scores)`);
-          
+
           // Reset score change indicator representation
           Object.keys(room.players).forEach(pid => {
             room.players[pid].scoreChange = 0;
@@ -394,7 +419,7 @@ setInterval(async () => {
           // Tally votes
           const answerVotes: { [pid: string]: number } = {};
           Object.keys(room.players).forEach(pid => { answerVotes[pid] = 0; });
-          
+
           Object.values(room.votes).forEach(votedId => {
             if (answerVotes[votedId] !== undefined) {
               answerVotes[votedId]++;
@@ -411,7 +436,7 @@ setInterval(async () => {
 
           // Give first, second, third place awards if they have at least 1 vote
           const distinctVoteCounts = Array.from(new Set(scoreboards.map(s => s.votes).filter(v => v > 0)));
-          
+
           scoreboards.forEach(item => {
             let pts = 0;
             const rankIndex = distinctVoteCounts.indexOf(item.votes);
@@ -438,7 +463,7 @@ setInterval(async () => {
           const roundSubs = Object.keys(room.answers);
           if (roundSubs.length >= 2) {
             const shuffleSubs = [...roundSubs].sort(() => Math.random() - 0.5);
-            
+
             const creativeId = shuffleSubs[0];
             const unhingedId = shuffleSubs[1];
             const unexpectedId = shuffleSubs[Math.min(2, shuffleSubs.length - 1)];
@@ -467,12 +492,27 @@ setInterval(async () => {
           }
 
           room.phase = 'SCOREBOARD';
-          
-          // Use pre-generated AI commentary which was formulated during voting phase
+
+          // Use pre-generated commentary if available, otherwise generate now
           if (room.preGeneratedCommentary) {
             room.commentary = room.preGeneratedCommentary;
           } else {
+            // Generate fresh commentary with actual vote counts now known
+            const finalFormatted = scoreboards.map(item => ({
+              name: room.players[item.playerId]?.name || "Unknown",
+              answer: room.answers[item.playerId] || "",
+              votes: item.votes
+            }));
+
             room.commentary = "Formulating your linguistic destruction...";
+            generateAiCommentary(room.challenge?.scenario || "", finalFormatted, room.language)
+              .then(res => {
+                room.commentary = res;
+              })
+              .catch(err => {
+                console.error("Scoreboard commentary generation failed:", err);
+                room.commentary = "Even my roast generator gave up on you lot. That\'s a new low.";
+              });
           }
         }
       }
@@ -648,7 +688,7 @@ app.post("/api/room/:code/action", async (req, res) => {
         if (!player.isHost) {
           return res.status(403).json({ error: "Only the host can initiate the match!" });
         }
-        
+
         const activePlayersCount = Object.values(room.players).filter(p => !p.isSpectator).length;
         if (activePlayersCount < 3) {
           return res.status(400).json({ error: "Need at least 3 active players to start! Spectators do not count." });
@@ -757,7 +797,7 @@ app.post("/api/room/:code/action", async (req, res) => {
           return res.status(400).json({ error: "Not in voting phase!" });
         }
         const votedTargetId = payload.votedPlayerId; // PlayerId or anonymous index identifier maps back
-        
+
         // Find which player index/item corresponds to payload voted id
         let trueVotedPlayerId = "";
         if (votedTargetId.startsWith("anonymous_")) {
@@ -845,7 +885,7 @@ app.post("/api/room/:code/action", async (req, res) => {
           room.shuffledAnswers = [];
           room.votes = {};
           room.revealedAnswerIndex = -1;
-          
+
           Object.values(room.players).forEach(p => {
             p.hasSubmitted = false;
             p.votedFor = null;
@@ -853,7 +893,7 @@ app.post("/api/room/:code/action", async (req, res) => {
 
           // Fetch previously used scenarios to avoid duplicates
           room.usedScenarios = room.usedScenarios || [];
-          
+
           room.commentary = `Generating Round ${room.round} impossible challenge...`;
           generateAiChallenge(room.usedScenarios, room.language, room.gameMode).then(challenge => {
             room.challenge = challenge;
@@ -877,7 +917,7 @@ app.post("/api/room/:code/action", async (req, res) => {
           y: typeof payload.y === "number" ? payload.y : undefined
         };
         room.emojiReactions.push(emojiReaction);
-        
+
         // Update local player state
         player.emojiReaction = payload.emoji;
         player.emojiTime = Date.now();
@@ -920,7 +960,7 @@ app.post("/api/room/:code/action", async (req, res) => {
         room.commentary = "New game is starting! Tell everyone to stick around.";
         room.statistics = {};
         room.usedScenarios = [];
-        
+
         // Zero all scores
         Object.keys(room.players).forEach(pid => {
           room.players[pid].score = 0;
