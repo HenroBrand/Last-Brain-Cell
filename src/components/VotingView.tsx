@@ -154,7 +154,6 @@ export default function VotingView({
           {EMOJIS.map((e) => (
             <button
               onClick={() => {
-                soundSynthesizer.playReactionSfx(e);
                 onSendEmoji(e);
               }}
               key={e}

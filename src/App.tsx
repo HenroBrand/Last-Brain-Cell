@@ -503,14 +503,13 @@ export default function App() {
         {roomCode && player && roomState && (
           <div className="w-full max-w-sm mx-auto mt-6 bg-purple-950/90 text-white rounded-xl border-3 border-black p-2.5 text-center flex flex-col gap-1.5 relative z-30 shadow-[4px_4px_0px_rgba(0,0,0,1)] select-none">
             <div className="text-[9px] uppercase font-black text-purple-300 tracking-wider flex items-center justify-center gap-1">
-              💬 SPAM REACTION VALVE (SOUNDS FOR ALL PLAYERS!)
+              💬 SPAM REACTION VALVE (ANIMATES FOR ALL PLAYERS!)
             </div>
             
             <div className="flex items-center justify-around">
               {["🧠", "💥", "😂", "💀", "💩", "🤡", "🎉", "🔥"].map((e) => (
                 <button
                   onClick={() => {
-                    soundSynthesizer.playReactionSfx(e);
                     handleSendEmoji(e);
                   }}
                   key={e}

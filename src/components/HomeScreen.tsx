@@ -15,6 +15,7 @@ interface HomeScreenProps {
 }
 
 const AVATARS = ["🦊", "🦁", "🐯", "🐼", "🐨", "🦄", "🦖", "🐙", "🦀", "🍍", "🥑", "🌶️"];
+const FUNNY_EMOJIS_POOL = ["🐷", "🐸", "🐻", "🐝", "🦖", "🐢", "🐙", "🦑", "🦞", "🦕", "🐆", "🐫", "🦙", "🐘", "🦛", "🦘", "🦡", "🦦", "🦧", "🦍", "🐕", "🐒", "🐔", "🐧", "🐦", "🦆", "🦅", "🦉", "🦇", "🐺", "🐗", "🐴", "🦄", "🪵", "🍄", "🌶️", "🥑", "🧅", "🥞", "🍣", "🍦", "🍩", "🍪", "🍺", "🍕", "🍔", "🍟", "🌮", "🍿", "🎪", "🎭", "🎨", "🎰", "🎮", "🚀", "🛸", "⛵", "🎈", "💎", "🔮", "🎩", "👑", "🤡", "🦸", "🧟", "🧙", "👻", "💀", "💩", "👹", "👽", "👾", "🤖", "⭐", "⚡", "🔥", "⛄", "🌈", "🎉", "🎃", "🔔", "💔" ];
 
 const ADJECTIVES_EN = ["Soggy", "Salty", "Greasy", "Turbulent", "Confused", "Dancing", "Squeaky", "Flaming", "Spicy", "Sassy", "Explosive", "Sleepy", "Rabid", "Absurd", "Clueless", "Wobbly", "Crusty", "Shaky", "Bumbling", "Gassy", "Pickled", "Dumbfounded", "Brain-dead"];
 const NOUNS_EN = ["Potato", "Waffle", "Sausage", "Bacon", "Donut", "Raccoon", "Mime", "Goose", "Pigeon", "Microwave", "Koala", "Snail", "Ostrich", "Braincell", "Noodle", "Muffin", "Toenail", "Mustard", "Nugget", "Sock", "Footbox", "Eggplant", "Salami", "Dustbunny"];
@@ -161,23 +162,36 @@ export default function HomeScreen({ onJoinRoom, onCreateRoom, errorMsg }: HomeS
             </div>
 
             {/* Custom input */}
-            <div className="flex flex-col justify-center items-center bg-purple-100 border-3 border-black p-1.5 rounded-xl text-center w-24 shrink-0 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-              <span className="text-[8px] font-black uppercase text-black leading-none mb-1">TYPE COZY</span>
-              <input
-                type="text"
-                maxLength={3}
-                value={avatar}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setAvatar(val);
-                }}
-                onBlur={() => {
-                  if (!avatar.trim()) setAvatar("🦊");
-                }}
-                placeholder="🦊"
-                className="w-full text-center text-lg bg-white border-2 border-black rounded-md py-0.5 font-bold font-sans tracking-tight focus:outline-none focus:ring-1 focus:ring-purple-600"
-                title="Type any custom emoji or up to 3 characters!"
-              />
+            <div className="flex flex-col justify-center items-center bg-purple-100 border-3 border-black p-1.5 rounded-xl text-center w-28 shrink-0 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+              <span className="text-[8px] font-black uppercase text-black leading-none mb-1">TYPE COZY / ROLL</span>
+              <div className="flex items-center gap-1 w-full">
+                <input
+                  type="text"
+                  maxLength={3}
+                  value={avatar}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setAvatar(val);
+                  }}
+                  onBlur={() => {
+                    if (!avatar.trim()) setAvatar("🦊");
+                  }}
+                  placeholder="🦊"
+                  className="w-full text-center text-lg bg-white border-2 border-black rounded-md py-0.5 font-bold font-sans tracking-tight focus:outline-none focus:ring-1 focus:ring-purple-600 min-w-0"
+                  title="Type any custom emoji or up to 3 characters!"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const randomEmoji = FUNNY_EMOJIS_POOL[Math.floor(Math.random() * FUNNY_EMOJIS_POOL.length)];
+                    setAvatar(randomEmoji);
+                  }}
+                  className="bg-amber-400 hover:bg-amber-500 border-2 border-black p-1 rounded hover:scale-110 active:scale-95 transition cursor-pointer text-xs flex items-center justify-center shrink-0"
+                  title="Roll random custom emoji!"
+                >
+                  🎲
+                </button>
+              </div>
             </div>
           </div>
         </div>

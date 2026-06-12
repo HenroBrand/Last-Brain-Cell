@@ -28,7 +28,12 @@ const FUNNY_TIPS = [
   "Science shows that spelling mistakes make your answer 28% more raserig and chaotic.",
   "Pressing reaction buttons multiple times increases your CPU's heart-rate. It is completely useless but highly satisfying.",
   "Spectators are legally permitted to judge others. In fact, it is encouraged by the Intergalactic Committee of Sitcombators.",
-  "In case of low brain activity, please restart your central nervous system or consume a delicious savoury tart."
+  "In case of low brain activity, please restart your central nervous system or consume a delicious savoury tart.",
+  "Stuck in writer's block? Close your eyes, think of a massive baked bean, and write the first word that comes to mind.",
+  "The server is powered by a hamster on a treadmill. Please try to make shorter jokes to avoid overheating his little paws.",
+  "According to local guidelines, using more than three punctuation marks in a joke is considered shouting at the algorithm.",
+  "If someone is beating you in points, check under their chair for smuggled dictionaries or miniature joke books.",
+  "Spectatorship is an art form. Make sure to breathe heavily into your virtual microphone to assert dominance."
 ];
 
 export default function LobbyView({
@@ -45,7 +50,7 @@ export default function LobbyView({
     const tipsCount = FUNNY_TIPS.length;
     const tipTimer = setInterval(() => {
       setTipIndex((prev) => (prev + 1) % tipsCount);
-    }, 5500);
+    }, 9000);
     return () => clearInterval(tipTimer);
   }, []);
 
