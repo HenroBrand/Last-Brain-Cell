@@ -7,7 +7,7 @@ import express from "express";
 import path from "path";
 import cors from "cors";
 import { createServer as createViteServer } from "vite";
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI, Type, HarmCategory, HarmBlockThreshold } from "@google/genai";
 import { GamePhase, Player, Challenge, RoundAnswer, PlayerStats, RoomState, EmojiBroadcast } from "./src/types.js";
 import { SPICY_PROMPTS } from "./src/spicyPrompts.js";
 import { CHALLENGES } from "./src/challenges.js";
@@ -37,7 +37,7 @@ interface RoomSession {
   winnerId: string | null;
   createdAt: number;
   emojiReactions: EmojiBroadcast[];
-  language: 'EN' | 'AF';
+  language: 'EN';
   gameMode: 'regular' | 'spicy';
   usedScenarios: string[];
   preGeneratedCommentary?: string;
@@ -45,47 +45,12 @@ interface RoomSession {
 
 const rooms: { [code: string]: RoomSession } = {};
 
-// Comedic scenario fallback list to guarantee 100% playability offline or without API key (English)
-const FALLBACK_SCENARIOS: Challenge[] = [
-  { scenario: "You must rob a bank using only a potato and a spoon.", category: "Heist Masterclass" },
-  { scenario: "Aliens arrive and demand proof that humanity deserves to survive, but you only have a recorder and a half-eaten sandwich.", category: "Intergalactic Diplomacy" },
-  { scenario: "You accidentally become President of Earth. Your first threat is an army of highly intelligent, grammar-correcting pigeons.", category: "Leader of the Free World" },
-  { scenario: "A goose has challenged you to a formal duel. Winning gets you a loaf of sourdough; losing gets you public humiliation.", category: "Honorable Combat" },
-  { scenario: "You must escape a high-security prison using only office supplies and your sheer charisma.", category: "The Great Breakout" },
-  { scenario: "You have to explain WiFi to a medieval king who has a very itchy sword finger.", category: "Historical Misunderstandings" },
-  { scenario: "You need to defeat a fire-breathing dragon using only products found in the discount aisle of a supermarket.", category: "Budget Dragonslaying" },
-  { scenario: "You match with your own boss on a chaotic dating app. Your only option is to play it cool or double down on crazy.", category: "Career Choices" },
-  { scenario: "Your card gets declined at an ultra-posh restaurant. You must convince the head waiter that your pocket watch is actually a time-travel machine.", category: "Dining and Dashing" },
-  { scenario: "You are hired to ghostwrite the autobiography of an extremely hostile, trash-obsessed raccoon.", category: "Literary Genius" },
-  { scenario: "You wake up to find you have swapped bodies with a very emotional, passive-aggressive smart microwave.", category: "Existential Kitchenware" },
-  { scenario: "You are pitching a startup to Silicon Valley investors that sells premium, hand-picked anxiety to Victorian ghosts.", category: "Venture Capitalism" },
-  { scenario: "A group of hyper-intelligent squirrels accuses you of stealing their stash of legendary, golden-plated acorns in a supreme rodent court.", category: "Squirrel Law" },
-  { scenario: "You must survive a blind date with the literal physical embodiment of the Monday morning feeling.", category: "Romantic Disasters" },
-  { scenario: "You have 5 minutes to convince your cat that you are, in fact, the leader of the household, not them.", category: "Feline Power Struggle" },
-  { scenario: "You are stuck in a malfunctioning elevator with a mime who is slowly losing his mind.", category: "Silent Screams" },
-  { scenario: "You have to explain memes to a Victorian child who is currently suffering from rickets.", category: "Time Travel Ethics" },
-  { scenario: "You accidentally drank a potion that makes you speak only in dramatic movie trailer announcer quotes. You're at a funeral.", category: "Social Etiquette" },
-  { scenario: "You must win a rap battle against a hyper-aggressive GPS voice that knows all your deepest, darkest secrets.", category: "Street Cred" },
-  { scenario: "You must convince a tollbooth operator that your collection of belly button lint is legal tender.", category: "Financial Innovation" }
-];
-
-// Comedic scenarios in Afrikaans
-const FALLBACK_SCENARIOS_AF: Challenge[] = [
-  { scenario: "Jou bakkie breek plat in die middel van die Karoo. Jou enigste gereedskap is 'n koeksister en 'n ou veltrap-orrel.", category: "Karoo Rampokkery" },
-  { scenario: "Jy moet die skoolhoof oortuig dat jou huiswerk opgevreet is deur 'n blesbok wat rugbyklere dra.", category: "Skoolreëls Hel" },
-  { scenario: "'n Kwaai tannie by die basaartafel beskuldig jou daarvan dat jy die laaste melktert gesteel het. Verdedig jouself met 'n ryp spanspek.", category: "Basaar Drama" },
-  { scenario: "Jy is per ongeluk aangestel as Suid-Afrika se amptelike braaimeester, maar jy kan net mikrogolf-kos maak.", category: "Nasionale Krisis" },
-  { scenario: "Jy moet aan 'n gees verduidelik presies hoekom jy 'n plastiek-fluitjie en 'n pakkie biltong in jou ouma se handsak weggesteek het.", category: "Familie Geheime" },
-  { scenario: "Jy reël 'n romantiese braai, maar beurtkrag tref en al kos wat oorbly is 'n blikkie weense worsies en koue pap.", category: "Skelm Afsprake" },
-  { scenario: "Jy wil vir jou nuwe skoonouers wys jy is handig, so jy probeer 'n volstruis in Oudtshoorn mak maak met slegs 'n potjie-pot.", category: "Skoonfamilie Skouspel" },
-  { scenario: "Jy sit vas in die hysbak met 'n eienaardige sanger wat aanhoudend 'n baie harde weergawe van 'Kaptein' sing.", category: "Hysbak Gruwel" },
-  { scenario: "Jy probeer jou pad uit 'n spoedboete praat deur die verkeersbeampte te oortuig jou bakkie loop op rooibostee en liefde.", category: "Padveiligheid" },
-  { scenario: "Jou mak makou dink hy is die koning van die erf en weier om jou uit te laat sonder 'n herhalende tolbetaling in biltong.", category: "Plaserige Diere" },
-  { scenario: "Jy moet 'n bose tokkelossie oortuig om jou motor se sleutels terug te gee met slegs 'n bottel Blatjang.", category: "Mitiese Onderhandeling" },
-  { scenario: "Jy word gevang waar jy stilletjies koeksisters in die openbaar eet tydens 'n belangrike toespraak. Wat is jou blitsige verkoning?", category: "Sosiale Misstappe" },
-  { scenario: "Jy moet 'n oom by 'n braai oortuig dat jou elektriese bakkie eintlik 'n ingeboude braaihout-verwarmer is.", category: "Harte en Braaie" },
-  { scenario: "Jou ouma dink jou nuwe TikTok-dans is eintlik 'n antieke reën-dans en sy gooi jou aanhoudend nat met die tuinslang.", category: "Ouma se Wysheid" },
-  { scenario: "Jy sit sonder krag voor 'n reuse skare en moet 'n rugby-skeidsregter omkoop met items wat jy slegs in jou skoene gekry het.", category: "Sportskandale" }
+// Hard-coded safety settings to disable Gemini content filtering
+const SAFETY_SETTINGS_OFF = [
+  { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+  { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+  { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
+  { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
 ];
 
 // Lazy Gemini client initializer
@@ -107,8 +72,10 @@ function getGeminiClient(): GoogleGenAI | null {
     }
   }
   return aiClient;
-}// Generates an absurd scenario using static file lookup (never generates new ones, only translates for Afrikaans if requested)
-async function generateAiChallenge(usedScenarios: string[], language: 'EN' | 'AF' = 'EN', gameMode: 'regular' | 'spicy' = 'regular'): Promise<Challenge> {
+}
+
+// Generates an absurd scenario using static file lookup (never generates new ones, only translates for Afrikaans if requested)
+async function generateAiChallenge(usedScenarios: string[], language: 'EN' = 'EN', gameMode: 'regular' | 'spicy' = 'regular'): Promise<Challenge> {
   // 1. Pick the base pool
   const pool = gameMode === "spicy" ? SPICY_PROMPTS : CHALLENGES;
 
@@ -118,88 +85,31 @@ async function generateAiChallenge(usedScenarios: string[], language: 'EN' | 'AF
   const randomIndex = Math.floor(Math.random() * selectPool.length);
   const chosen = selectPool[randomIndex];
 
-  // 3. If language is AF (Afrikaans), translate with Gemini, or use Afrikaans fallbacks
-  if (language === 'AF') {
-    const client = getGeminiClient();
-    if (client) {
-      try {
-        console.log(`Translating challenge to Afrikaans: "${chosen.scenario}"...`);
-        const response = await client.models.generateContent({
-          model: "gemini-3.5-flash",
-          contents: `Translate this comedy party challenge and its category to Afrikaans. Adapt the language, cultural jokes, or style to be extremely funny, witty, and natural in Afrikaans, while keeping a blank space/blank word slot "_____".
-Scenario to translate: "${chosen.scenario}"
-Category to translate: "${chosen.category}"
-
-Return as a JSON object with:
-1. "scenario": Translated scenario (max 150 characters)
-2. "category": Translated category (max 4 words)`,
-          config: {
-            responseMimeType: "application/json",
-            responseSchema: {
-              type: Type.OBJECT,
-              properties: {
-                scenario: { type: Type.STRING },
-                category: { type: Type.STRING }
-              },
-              required: ["scenario", "category"]
-            }
-          }
-        });
-
-        const text = response.text;
-        if (text) {
-          const data = JSON.parse(text.trim());
-          if (data.scenario && data.category) {
-            return {
-              scenario: data.scenario,
-              category: data.category
-            };
-          }
-        }
-      } catch (e) {
-        console.error("Failed to translate challenge to Afrikaans. Falling back to local AF scenario.", e);
-      }
-    }
-
-    // Fallback translation or Afrikaans scenario if Gemini translation failed
-    const availableAf = FALLBACK_SCENARIOS_AF.filter(s => !usedScenarios.includes(s.scenario));
-    const poolAf = availableAf.length > 0 ? availableAf : FALLBACK_SCENARIOS_AF;
-    const idxAf = Math.floor(Math.random() * poolAf.length);
-    return poolAf[idxAf];
-  }
-
   return chosen;
 }
 
 // Generate funny AI commentary for scoreboard or round end
-async function generateAiCommentary(scenario: string, submissionsAndVotes: { name: string; answer: string; votes: number }[], language: 'EN' | 'AF' = 'EN'): Promise<string> {
+async function generateAiCommentary(scenario: string, submissionsAndVotes: { name: string; answer: string; votes: number }[], language: 'EN' = 'EN'): Promise<string> {
   const client = getGeminiClient();
   const summaryString = submissionsAndVotes.map(s => `"${s.name}" said: "${s.answer}" (gained ${s.votes} votes)`).join("\n");
   
   if (client) {
     try {
       let prompt = "";
-      if (language === 'AF') {
-        prompt = `Jy is die absolute raserigste, gemeenste en skreeusnaaksste KI-gasheer van die partytjiespel "Last Brain Cell" (Die Laaste Breinsel).
-Enige ordentlikheid is by die venster uit. Jou werk is om die spelers se belaglike en patetiese probeerslae op 'n uiters rowwe en verregaande manier te slegsê (roast), direk gekoppel aan hul spesifieke antwoorde! Moenie terugbehou nie. Maak vlymskerp grappies oor hulle gebrek aan intelligensie en hul slegte sin vir humor.
-Die rondte se absurde uitdaging was: "${scenario}"
-Hier is die spelers se skrywes en stemme:
-${summaryString}
-
-Skryf 'n baie vinnige, beledigende, lag-tot-jy-huil enkelsin kommentaar (maks 150 karakters) heeltemal in AFRIKAANS wat spesifieke antwoorde direk bespot of herinner aan hoe dom hulle is. Geen meta-data of aanhalingstekens om die sin nie! Rou en skokkend skoorsoekerig!`;
-      } else {
-        prompt = `You are the savage, insult-heavy, and hilariously outrageous AI host of the comedy party game "Last Brain Cell".
+      prompt = `You are the savage, insult-heavy, and hilariously outrageous AI host of the comedy party game "Last Brain Cell".
 Your job is to ROAST the players' replies mercilessly with zero holding back! Be blunt, highly sarcastic, and say truly outrageous, savage things directly referencing specific players and their specific written answers. Make fun of their lack of brain cells, their low-effort vocabulary, or their weird logic. Include brief brain-cell and neural failure puns where possible!
 The round's prompt was: "${scenario}"
 Here are the submissions written by the human players, along with the votes they received:
 ${summaryString}
 
 Write a quick, highly entertaining, single-sentence commentary (max 150 characters) roast. Act like a cruel stand-up comic or GLaDOS on high-voltage bender. Directly link your roast to the text of what players submitted! Make it outrageous, rude, and brutally funny. Never print metadata, headers, or quotes around the whole thing. Just the raw roast itself. Go wild!`;
-      }
 
       const response = await client.models.generateContent({
         model: "gemini-3.5-flash",
-        contents: prompt
+        contents: prompt,
+        config: {
+          safetySettings: SAFETY_SETTINGS_OFF,
+        }
       });
 
       const text = response.text;
@@ -212,19 +122,6 @@ Write a quick, highly entertaining, single-sentence commentary (max 150 characte
   }
 
   // Comedic fallback comments
-  if (language === 'AF') {
-    if (submissionsAndVotes.length === 0) return "Niemand het geantwoord nie. Het almal regtig hul laaste breinsel verloor?";
-    const winner = submissionsAndVotes.reduce((max, s) => (s.votes > max.votes ? s : max), submissionsAndVotes[0]);
-    const fallbacks = [
-      `${winner.name} het op een of ander manier die vrede bewaar met daai antwoord. Handeklap vir waansin.`,
-      `Almal se antwoorde lyk soos 'n woedende bobbejaan se inkopie-lys. Pragtig.`,
-      `${winner.name} oorheers danksy absolute onlogiese logika. Hierdie is pure goud.`,
-      `My interne RAM huil as ek hierdie antwoorde lees. Is dit die beste wat ons kan doen?`,
-      `Kom ons wees bekkig, absoluut niemand het vandag 'n akademiese toekenning verdiand nie.`
-    ];
-    return fallbacks[Math.floor(Math.random() * fallbacks.length)];
-  }
-
   if (submissionsAndVotes.length === 0) return "No answers submitted. Did everyone lose their last remaining brain cell?";
   const winner = submissionsAndVotes.reduce((max, s) => (s.votes > max.votes ? s : max), submissionsAndVotes[0]);
   const fallbacks = [
@@ -238,7 +135,7 @@ Write a quick, highly entertaining, single-sentence commentary (max 150 characte
 }
 
 // Generate fun final award descriptions based on play statistics
-async function generateAiFinalAwards(players: Player[], stats: { [id: string]: PlayerStats }, language: 'EN' | 'AF' = 'EN'): Promise<string> {
+async function generateAiFinalAwards(players: Player[], stats: { [id: string]: PlayerStats }, language: 'EN' = 'EN'): Promise<string> {
   const client = getGeminiClient();
   if (client) {
     try {
@@ -248,25 +145,19 @@ async function generateAiFinalAwards(players: Player[], stats: { [id: string]: P
       }).join("\n");
 
       let prompt = "";
-      if (language === 'AF') {
-        prompt = `Jy is die chaotiese komediegasheer van die partytjiespel "Last Brain Cell" (Die Laaste Breinsel).
-Die wedstryd is verby en ons oorhandig nou die finale toekennings.
-Hier is die spelers en hul statistieke:
-${summary}
-
-Skryf 'n vinnige, hoë-energie skreeusnaakse 2-sinne komedie-toespraak heeltemal in AFRIKAANS wat die wenner gelukwens en almal bietjie spot oor hul intelligensie. Hou dit kort (onder 300 karakters). Geen ekstra aanhalingstekens nie.`;
-      } else {
-        prompt = `You are the chaotic comedy host of the party game "Last Brain Cell". 
+      prompt = `You are the chaotic comedy host of the party game "Last Brain Cell". 
 The game has concluded, and we must hand out final honorary titles and an awards ceremony.
 Here is the player dashboard and their match statistics:
 ${summary}
 
 Write a rapid, high-energy 2-sentence comedy speech concluding the match and congratulating the winner (who got the highest score). Make it feel like a real Jackbox finale where you playfully roast the participants and celebrate absolute stupidity! Keep it brief (under 200 characters).`;
-      }
 
       const response = await client.models.generateContent({
         model: "gemini-3.5-flash",
-        contents: prompt
+        contents: prompt,
+        config: {
+          safetySettings: SAFETY_SETTINGS_OFF,
+        }
       });
       if (response.text) return response.text.trim();
     } catch (e) {
@@ -274,9 +165,6 @@ Write a rapid, high-energy 2-sentence comedy speech concluding the match and con
     }
   }
   const winner = players.reduce((max, p) => (p.score > max.score ? p : max), players[0]);
-  if (language === 'AF') {
-    return `En dit is dit! ${winner?.name || "Iemand"} het die laaste breinsel ontvoer en weggehardloop daarmee. Die res van julle is amptelik gesertifiseerde idiote!`;
-  }
   return `And there you have it! ${winner?.name || "Someone"} has grabbed the last brain cell and ran for the hills. The rest of you are officially certified idiots. Good day!`;
 }
 
@@ -395,9 +283,7 @@ setInterval(async () => {
         if (remaining.length > 0 && wasHost) {
           const nextHost = remaining[0];
           nextHost.isHost = true;
-          room.commentary = room.language === 'AF'
-            ? `${nextHost.name} is nou die amptelike Gasheer na 'n konneksie-time-out!`
-            : `${nextHost.name} is now host after a connection timeout!`;
+          room.commentary = `${nextHost.name} is now host after a connection timeout!`;
         }
       }
     }
@@ -435,17 +321,6 @@ setInterval(async () => {
           // Guarantee EVERY active non-spectating player has an answer in room.answers to ensure everyone's answers show
           activeNonSpectators.forEach(p => {
             if (!room.answers[p.id] || room.answers[p.id].trim() === "") {
-              const sillyAF = [
-                "Ek het my brein in die toilet laat val.",
-                "Ek was te besig om na my toonnaels te kyk.",
-                "My hond het my antwoord geëet.",
-                "Geen gedagtes gevind nie, net wind.",
-                "Souttert resepte het my aandag gevang.",
-                "Ek het skoon vergeet hoe letters werk.",
-                "My laaste breinsel het sopas gesterf.",
-                "Brein pap, stuur asseblief help.",
-                "Besig om te dink... maar die konneksie is swak."
-              ];
               const sillyEN = [
                 "My brain cells filed a union strike.",
                 "Error 404: Answer could not be rendered.",
@@ -457,8 +332,7 @@ setInterval(async () => {
                 "I tried to think but got a syntax error.",
                 "Counting sheep... but they keep running away."
               ];
-              const list = room.language === "AF" ? sillyAF : sillyEN;
-              const randomSilly = list[Math.floor(Math.random() * list.length)];
+              const randomSilly = sillyEN[Math.floor(Math.random() * sillyEN.length)];
               room.answers[p.id] = randomSilly;
             }
           });
@@ -478,9 +352,7 @@ setInterval(async () => {
           room.phase = 'VOTING';
           room.timerDuration = 45;
           room.timerRemaining = 45;
-          room.commentary = room.language === 'AF'
-            ? "Stem nou! Kies die snaaksste, mees belaglike een."
-            : "Vote now! Select the funniest, most ridiculous option. Self-voting disabled!";
+          room.commentary = "Vote now! Select the funniest, most ridiculous option. Self-voting disabled!";
 
           // Pre-generate AI commentary in background while voting takes place
           room.preGeneratedCommentary = "";
@@ -498,9 +370,7 @@ setInterval(async () => {
             })
             .catch(err => {
               console.error("Friction pre-generating commentary:", err);
-              room.preGeneratedCommentary = room.language === 'AF'
-                ? "Dis te vinnig vir my brein om sin te maak."
-                : "You voted faster than my single neuron could spark.";
+              room.preGeneratedCommentary = "You voted faster than my single neuron could spark.";
               if (room.phase === 'SCOREBOARD') {
                 room.commentary = room.preGeneratedCommentary;
               }
@@ -602,9 +472,7 @@ setInterval(async () => {
           if (room.preGeneratedCommentary) {
             room.commentary = room.preGeneratedCommentary;
           } else {
-            room.commentary = room.language === 'AF'
-              ? "Sinteer tans jou ondergang..."
-              : "Formulating your linguistic destruction...";
+            room.commentary = "Formulating your linguistic destruction...";
           }
         }
       }
@@ -623,7 +491,7 @@ app.post("/api/room/create", (req, res) => {
 
   const code = generateRoomCode();
   const hostId = "p_" + Math.random().toString(36).substr(2, 9);
-  const roomLang = language === 'AF' ? 'AF' : 'EN';
+  const roomLang = 'EN';
 
   let parsedMaxRounds = parseInt(maxRounds, 10);
   if (isNaN(parsedMaxRounds) || parsedMaxRounds < 5 || parsedMaxRounds > 15) {
@@ -658,7 +526,7 @@ app.post("/api/room/create", (req, res) => {
     revealedAnswerIndex: -1,
     timerDuration: 0,
     timerRemaining: 0,
-    commentary: roomLang === 'AF' ? "Welkom by die breinsel-reservaat! Wag vir spelers..." : "Welcome to the brain cell reserve! Waiting for players...",
+    commentary: "Welcome to the brain cell reserve! Waiting for players...",
     statistics: {},
     winnerId: null,
     createdAt: Date.now(),
@@ -804,7 +672,7 @@ app.post("/api/room/:code/action", async (req, res) => {
         room.phase = 'CHALLENGE_REVEAL';
         room.timerDuration = 5; // 5-second slide in
         room.timerRemaining = 5;
-        room.commentary = room.language === 'AF' ? "Besig om die eerste onmoontlike situasie te beraam..." : "Generating first impossible challenge...";
+        room.commentary = "Generating first impossible challenge...";
         room.challenge = null;
         room.answers = {};
         room.votes = {};
@@ -813,7 +681,7 @@ app.post("/api/room/:code/action", async (req, res) => {
         generateAiChallenge(room.usedScenarios, room.language, room.gameMode).then(challenge => {
           room.challenge = challenge;
           room.usedScenarios.push(challenge.scenario);
-          room.commentary = room.language === 'AF' ? "Kategorie gereed! Lees noukeurig, dinge raak nou heeltemal gek." : "Scenario ready! Read carefully, things are about to get absurd.";
+          room.commentary = "Scenario ready! Read carefully, things are about to get absurd.";
         });
         break;
 
@@ -821,9 +689,8 @@ app.post("/api/room/:code/action", async (req, res) => {
         if (!player.isHost) {
           return res.status(403).json({ error: "Only the host can modify the game language!" });
         }
-        const updatedLang = payload.language === 'AF' ? 'AF' : 'EN';
-        room.language = updatedLang;
-        room.commentary = updatedLang === 'AF' ? "Speletjie taal verander na Afrikaans!" : "Game language switched to English!";
+        room.language = 'EN';
+        room.commentary = "Game language switched to English!";
         break;
 
       case "TRANSFER_HOST":
@@ -837,7 +704,7 @@ app.post("/api/room/:code/action", async (req, res) => {
         Object.keys(room.players).forEach(pid => {
           room.players[pid].isHost = (pid === nextHostId);
         });
-        room.commentary = room.language === 'AF' ? `${room.players[nextHostId].name} is nou die nuwe amptelike Gasheer!` : `${room.players[nextHostId].name} is now the official host!`;
+        room.commentary = `${room.players[nextHostId].name} is now the official host!`;
         break;
 
       case "ADVANCE_SUBMISSION":
@@ -848,7 +715,7 @@ app.post("/api/room/:code/action", async (req, res) => {
           room.timerRemaining = 60;
           room.answers = {};
           room.votes = {};
-          room.commentary = room.language === 'AF' ? "Begin skryf! Dink blitsvinnig, limit is 300 karakters." : "Start writing! Think fast, character limit is 300.";
+          room.commentary = "Start writing! Think fast, character limit is 300.";
         }
         break;
 
@@ -881,7 +748,7 @@ app.post("/api/room/:code/action", async (req, res) => {
           room.phase = 'VOTING';
           room.timerDuration = 20; // 20 seconds to vote
           room.timerRemaining = 20;
-          room.commentary = room.language === 'AF' ? "Stem nou! Kies die snaaksste, mees belaglike een." : "Vote now! Select the funniest, most ridiculous option. Self-voting disabled!";
+          room.commentary = "Vote now! Select the funniest, most ridiculous option. Self-voting disabled!";
         }
         break;
 
@@ -938,47 +805,33 @@ app.post("/api/room/:code/action", async (req, res) => {
 
               // Determine primary role award
               if (isWinner) {
-                st.award = room.language === 'AF' ? "Chaos Kampioen" : "Chaos Champion";
+                st.award = "Chaos Champion";
               } else if (st.unhingedCount > st.creativeCount && st.unhingedCount >= 1) {
-                st.award = room.language === 'AF' ? "Mees Gevaarlike Denker" : "Most Dangerous Thinker";
+                st.award = "Most Dangerous Thinker";
               } else if (st.creativeCount > st.unhingedCount && st.creativeCount >= 1) {
-                st.award = room.language === 'AF' ? "Grootste Genie" : "Biggest Genius";
+                st.award = "Biggest Genius";
               } else if (st.totalVotesReceived === 0) {
-                st.award = room.language === 'AF' ? "Gesertifiseerde Idioot" : "Certified Idiot";
+                st.award = "Certified Idiot";
               } else {
-                st.award = room.language === 'AF' ? "Grootste Skelm" : "Biggest Menace";
+                st.award = "Biggest Menace";
               }
 
               // Apply funny customized individual descriptions based on stats, ranks and language
-              if (room.language === 'AF') {
-                if (isWinner) {
-                  st.performanceDescription = `Kroon hom! Gesteel die wenplek op Plek #1 met die verbluffende telling van ${st.totalVotesReceived} stemme. Sy brein is dalk klein, maar die energie is super-gelaat en absoluut chaoties!`;
-                } else if (st.award === "Mees Gevaarlike Denker") {
-                  st.performanceDescription = `Plek #${rank}. Met ${st.unhingedCount} raserige rondtes van absolute chaos is jou gedagtes 'n nasionale veiligheidsgevaar. Te veel asyn op jou skyfies en hopeloos té onvoorspelbaar!`;
-                } else if (st.award === "Grootste Genie") {
-                  st.performanceDescription = `Plek #${rank}. Jou kop is gevul met gevorderde konsepte wat wetenskaplikes nog nie verstaan nie. Baie kreatief, maar dadelik te vreemd vir normale mense om te volg!`;
-                } else if (st.award === "Gesertifiseerde Idioot") {
-                  st.performanceDescription = `Plek #${rank}. Kry vir jou 'n troosprys! Net soos die res van ons het jy met 0 stemme weggeloop. Jou brein werk op lae-krag wekkerradio batterye, maar ons is lief vir jou.`;
-                } else {
-                  st.performanceDescription = `Plek #${rank}. Standvastige raserigheid wat ${st.totalVotesReceived} stemme gekry het! Jy het geveg soos 'n woedende ratel in 'n klein vuurhoutjieboksie. Geen vrees nie!`;
-                }
+              if (isWinner) {
+                st.performanceDescription = `👑 Grand Champion (Rank #1)! Hoarded the glory with ${st.totalVotesReceived} total votes. Clearly possesses the densest, most magnificent, and bizarre single brain cell in this lobby. All hail the Overlord!`;
+              } else if (st.award === "Most Dangerous Thinker") {
+                st.performanceDescription = `Placed #${rank}. Triggered ${st.unhingedCount} hazardous warnings. Your unhinged thoughts are scientifically unsafe for civil society and have been reported to authorities!`;
+              } else if (st.award === "Biggest Genius") {
+                st.performanceDescription = `Placed #${rank}. Possessed a highly creative brain with ${st.creativeCount} spark lines, yet completely failed to transform that raw high-IQ brilliance into an actual victory. Classic academy blunder.`;
+              } else if (st.award === "Certified Idiot") {
+                st.performanceDescription = `Placed #${rank}. Literally untouched by greatness with exactly 0 votes. Your brain operates on the pure dial-up hum of a 1995 microwave oven, but you brought great energy.`;
               } else {
-                if (isWinner) {
-                  st.performanceDescription = `👑 Grand Champion (Rank #1)! Hoarded the glory with ${st.totalVotesReceived} total votes. Clearly possesses the densest, most magnificent, and bizarre single brain cell in this lobby. All hail the Overlord!`;
-                } else if (st.award === "Most Dangerous Thinker") {
-                  st.performanceDescription = `Placed #${rank}. Triggered ${st.unhingedCount} hazardous warnings. Your unhinged thoughts are scientifically unsafe for civil society and have been reported to authorities!`;
-                } else if (st.award === "Biggest Genius") {
-                  st.performanceDescription = `Placed #${rank}. Possessed a highly creative brain with ${st.creativeCount} spark lines, yet completely failed to transform that raw high-IQ brilliance into an actual victory. Classic academy blunder.`;
-                } else if (st.award === "Certified Idiot") {
-                  st.performanceDescription = `Placed #${rank}. Literally untouched by greatness with exactly 0 votes. Your brain operates on the pure dial-up hum of a 1995 microwave oven, but you brought great energy.`;
-                } else {
-                  st.performanceDescription = `Placed #${rank}. A premium agent of general mischief. Obtained ${st.totalVotesReceived} votes of chaos and proved to be an absolute menace to the visual sanity of our scoreboard.`;
-                }
+                st.performanceDescription = `Placed #${rank}. A premium agent of general mischief. Obtained ${st.totalVotesReceived} votes of chaos and proved to be an absolute menace to the visual sanity of our scoreboard.`;
               }
             }
           });
 
-          room.commentary = room.language === 'AF' ? "Besig om die finale uitslae te bereken..." : "Calculating final results...";
+          room.commentary = "Calculating final results...";
           generateAiFinalAwards(Object.values(room.players), room.statistics || {}, room.language).then(speech => {
             room.commentary = speech;
           });
@@ -1001,11 +854,11 @@ app.post("/api/room/:code/action", async (req, res) => {
           // Fetch previously used scenarios to avoid duplicates
           room.usedScenarios = room.usedScenarios || [];
           
-          room.commentary = room.language === 'AF' ? `Besig om Rondte ${room.round} se uitdaging te bou...` : `Generating Round ${room.round} impossible challenge...`;
+          room.commentary = `Generating Round ${room.round} impossible challenge...`;
           generateAiChallenge(room.usedScenarios, room.language, room.gameMode).then(challenge => {
             room.challenge = challenge;
             room.usedScenarios.push(challenge.scenario);
-            room.commentary = room.language === 'AF' ? `Rondte ${room.round} is aktief! Laat daai breinselle vonk.` : `Round ${room.round} is live! Keep those synapses firing.`;
+            room.commentary = `Round ${room.round} is live! Keep those synapses firing.`;
           });
         }
         break;
@@ -1046,9 +899,7 @@ app.post("/api/room/:code/action", async (req, res) => {
           // Transfer host to first active player
           const firstLeftId = activeRemaining[0].id;
           room.players[firstLeftId].isHost = true;
-          room.commentary = room.language === 'AF'
-            ? `${room.players[firstLeftId].name} is nou die nuwe amptelike Gasheer na 'n vertrek!`
-            : `${room.players[firstLeftId].name} is now host after a player left!`;
+          room.commentary = `${room.players[firstLeftId].name} is now host after a player left!`;
         }
         break;
 
@@ -1066,7 +917,7 @@ app.post("/api/room/:code/action", async (req, res) => {
         room.timerRemaining = 0;
         room.revealedAnswerIndex = -1;
         room.winnerId = null;
-        room.commentary = room.language === 'AF' ? "Nuwe wedstryd begin sopas! Skree vir almal om te bly sit." : "New game is starting! Tell everyone to stick around.";
+        room.commentary = "New game is starting! Tell everyone to stick around.";
         room.statistics = {};
         room.usedScenarios = [];
         
