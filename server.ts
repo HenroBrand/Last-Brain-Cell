@@ -10,6 +10,7 @@ import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
 import { GamePhase, Player, Challenge, RoundAnswer, PlayerStats, RoomState, EmojiBroadcast } from "./src/types.js";
 import { SPICY_PROMPTS } from "./src/spicyPrompts.js";
+import { CHALLENGES } from "./src/challenges.js";
 
 const app = express();
 const PORT = parseInt(process.env.PORT || "3000", 10);
@@ -38,6 +39,8 @@ interface RoomSession {
   emojiReactions: EmojiBroadcast[];
   language: 'EN' | 'AF';
   gameMode: 'regular' | 'spicy';
+  usedScenarios: string[];
+  preGeneratedCommentary?: string;
 }
 
 const rooms: { [code: string]: RoomSession } = {};
@@ -104,85 +107,68 @@ function getGeminiClient(): GoogleGenAI | null {
     }
   }
   return aiClient;
-}
-
-// Generates an absurd scenario using Gemini or comedic fallbacks
+}// Generates an absurd scenario using static file lookup (never generates new ones, only translates for Afrikaans if requested)
 async function generateAiChallenge(usedScenarios: string[], language: 'EN' | 'AF' = 'EN', gameMode: 'regular' | 'spicy' = 'regular'): Promise<Challenge> {
-  if (gameMode === "spicy") {
-    // Select an unused spicy prompt if possible, else any spicy prompt
-    const available = SPICY_PROMPTS.filter(s => !usedScenarios.includes(s.scenario));
-    const pool = available.length > 0 ? available : SPICY_PROMPTS;
-    const randomIndex = Math.floor(Math.random() * pool.length);
-    return pool[randomIndex];
-  }
+  // 1. Pick the base pool
+  const pool = gameMode === "spicy" ? SPICY_PROMPTS : CHALLENGES;
 
-  const client = getGeminiClient();
-  if (client) {
-    try {
-      console.log(`Attempting to generate comedic challenge with Gemini in language: ${language}...`);
-      
-      let prompt = "";
-      if (language === 'AF') {
-        prompt = `Genereer 'n heeltemal nuwe, hoogs absurde en skreeusnaakse komiese situasie of uitdaging vir 'n partytjiespel soos Jackbox, heeltemal in AFRIKAANS.
-Dit moet 'n onmoontlike, belaglike, of skandelike situasie wees waar die spelers 'n snaakse oplossing moet skryf.
-Gee die uitset in JSON-formaat terug met hierdie twee eienskappe:
-1. "scenario": Onder 120 karakters, wat die snaakse onmoontlike situasie of keuse stel. Staan in skoon Afrikaans.
-2. "category": 'n Snaakse, dramatiese of sarkastiese kategorie-naam vir hierdie rondte (maks 4 woorde).
-Moenie hierdie reeds gebruikte situasies insluit nie: [${usedScenarios.join(", ")}].
-Voorbeeld van Afrikaanse unhinged vibes:
-- "Jou bakkie breek plat in die Karoo en al wat jy het is 'n koeksister en jou veltrap-orrel."
-- "Oortuig 'n kwaai tannie by die basaar dat jy nie haar laaste melktert gesteel het nie."
-Hou dit ongelooflik wild, kreatief, onreëlmatig (unhinged) en geoptimaliseer vir maksimum lag. Moenie cliché antwoorde gee nie. Skryf slegs in skoon Afrikaans!`;
-      } else {
-        prompt = `Generate a completely new and highly absurd, hilarious comedy situation or prompt for a party game similar to Jackbox.
-It should be an impossible, ridiculous, or embarrassing situation where players have to write a witty solution.
-Return the output in JSON format with two properties:
-1. "scenario": Under 120 characters, stating the hilarious impossible task or situation.
-2. "category": A funny, dramatic, or sarcastic category name for this round (max 4 words).
-Exclude these previously used scenarios: [${usedScenarios.join(", ")}].
-Examples:
-- "You must rob a bank using only a potato and a spoon."
-- "Aliens demand proof that humanity deserves to survive, but you only have a recorder and a half-eaten sandwich."
-Keep it extremely unhinged, creative, and optimized for maximum friend-group laughter. Avoid cliché answers. Make sure it's PG-13 but edgy.`;
-      }
+  // 2. Select randomly among those not in usedScenarios
+  const available = pool.filter(c => !usedScenarios.includes(c.scenario));
+  const selectPool = available.length > 0 ? available : pool;
+  const randomIndex = Math.floor(Math.random() * selectPool.length);
+  const chosen = selectPool[randomIndex];
 
-      const response = await client.models.generateContent({
-        model: "gemini-3.5-flash",
-        contents: prompt,
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              scenario: { type: Type.STRING, description: "The funny scenario" },
-              category: { type: Type.STRING, description: "Action-packed comedic category" }
-            },
-            required: ["scenario", "category"]
+  // 3. If language is AF (Afrikaans), translate with Gemini, or use Afrikaans fallbacks
+  if (language === 'AF') {
+    const client = getGeminiClient();
+    if (client) {
+      try {
+        console.log(`Translating challenge to Afrikaans: "${chosen.scenario}"...`);
+        const response = await client.models.generateContent({
+          model: "gemini-3.5-flash",
+          contents: `Translate this comedy party challenge and its category to Afrikaans. Adapt the language, cultural jokes, or style to be extremely funny, witty, and natural in Afrikaans, while keeping a blank space/blank word slot "_____".
+Scenario to translate: "${chosen.scenario}"
+Category to translate: "${chosen.category}"
+
+Return as a JSON object with:
+1. "scenario": Translated scenario (max 150 characters)
+2. "category": Translated category (max 4 words)`,
+          config: {
+            responseMimeType: "application/json",
+            responseSchema: {
+              type: Type.OBJECT,
+              properties: {
+                scenario: { type: Type.STRING },
+                category: { type: Type.STRING }
+              },
+              required: ["scenario", "category"]
+            }
+          }
+        });
+
+        const text = response.text;
+        if (text) {
+          const data = JSON.parse(text.trim());
+          if (data.scenario && data.category) {
+            return {
+              scenario: data.scenario,
+              category: data.category
+            };
           }
         }
-      });
-
-      const responseText = response.text;
-      if (responseText) {
-        const data = JSON.parse(responseText.trim());
-        if (data.scenario && data.category) {
-          return {
-            scenario: data.scenario,
-            category: data.category
-          };
-        }
+      } catch (e) {
+        console.error("Failed to translate challenge to Afrikaans. Falling back to local AF scenario.", e);
       }
-    } catch (e) {
-      console.error("Gemini challenge generation failed. Using fallbacks.", e);
     }
+
+    // Fallback translation or Afrikaans scenario if Gemini translation failed
+    const availableAf = FALLBACK_SCENARIOS_AF.filter(s => !usedScenarios.includes(s.scenario));
+    const poolAf = availableAf.length > 0 ? availableAf : FALLBACK_SCENARIOS_AF;
+    const idxAf = Math.floor(Math.random() * poolAf.length);
+    return poolAf[idxAf];
   }
 
-  // Comedic fallback selection avoiding repeats
-  const fallbackList = language === 'AF' ? FALLBACK_SCENARIOS_AF : FALLBACK_SCENARIOS;
-  const available = fallbackList.filter(s => !usedScenarios.includes(s.scenario));
-  const pool = available.length > 0 ? available : fallbackList;
-  const randomIndex = Math.floor(Math.random() * pool.length);
-  return pool[randomIndex];
+  return chosen;
 }
 
 // Generate funny AI commentary for scoreboard or round end
@@ -495,6 +481,30 @@ setInterval(async () => {
           room.commentary = room.language === 'AF'
             ? "Stem nou! Kies die snaaksste, mees belaglike een."
             : "Vote now! Select the funniest, most ridiculous option. Self-voting disabled!";
+
+          // Pre-generate AI commentary in background while voting takes place
+          room.preGeneratedCommentary = "";
+          const baseFormatted = Object.keys(room.answers).map(pid => ({
+            name: room.players[pid]?.name || "Unidentified Cell",
+            answer: room.answers[pid],
+            votes: 0
+          }));
+          generateAiCommentary(room.challenge?.scenario || "", baseFormatted, room.language)
+            .then(res => {
+              room.preGeneratedCommentary = res;
+              if (room.phase === 'SCOREBOARD') {
+                room.commentary = res;
+              }
+            })
+            .catch(err => {
+              console.error("Friction pre-generating commentary:", err);
+              room.preGeneratedCommentary = room.language === 'AF'
+                ? "Dis te vinnig vir my brein om sin te maak."
+                : "You voted faster than my single neuron could spark.";
+              if (room.phase === 'SCOREBOARD') {
+                room.commentary = room.preGeneratedCommentary;
+              }
+            });
         }
       } else if (room.phase === 'VOTING') {
         const voteCount = Object.keys(room.votes).filter(voterId => {
@@ -588,17 +598,14 @@ setInterval(async () => {
 
           room.phase = 'SCOREBOARD';
           
-          // Generate AI Commentary for Scoreboard synchronously (falls back if lazy client unavailable)
-          const formattedSubmissions = Object.keys(room.answers).map(pid => ({
-            name: room.players[pid]?.name || "Unidentified Cell",
-            answer: room.answers[pid],
-            votes: answerVotes[pid] || 0
-          }));
-
-          room.commentary = "Writing commentary...";
-          generateAiCommentary(room.challenge?.scenario || "", formattedSubmissions, room.language).then(res => {
-            room.commentary = res;
-          });
+          // Use pre-generated AI commentary which was formulated during voting phase
+          if (room.preGeneratedCommentary) {
+            room.commentary = room.preGeneratedCommentary;
+          } else {
+            room.commentary = room.language === 'AF'
+              ? "Sinteer tans jou ondergang..."
+              : "Formulating your linguistic destruction...";
+          }
         }
       }
     }
@@ -656,7 +663,8 @@ app.post("/api/room/create", (req, res) => {
     winnerId: null,
     createdAt: Date.now(),
     emojiReactions: [],
-    language: roomLang
+    language: roomLang,
+    usedScenarios: []
   };
 
   res.json({
@@ -801,8 +809,10 @@ app.post("/api/room/:code/action", async (req, res) => {
         room.answers = {};
         room.votes = {};
 
-        generateAiChallenge([], room.language, room.gameMode).then(challenge => {
+        room.usedScenarios = [];
+        generateAiChallenge(room.usedScenarios, room.language, room.gameMode).then(challenge => {
           room.challenge = challenge;
+          room.usedScenarios.push(challenge.scenario);
           room.commentary = room.language === 'AF' ? "Kategorie gereed! Lees noukeurig, dinge raak nou heeltemal gek." : "Scenario ready! Read carefully, things are about to get absurd.";
         });
         break;
@@ -989,11 +999,12 @@ app.post("/api/room/:code/action", async (req, res) => {
           });
 
           // Fetch previously used scenarios to avoid duplicates
-          const used = Object.values(rooms).filter(r => r.code === code).map(r => r.challenge?.scenario || "").filter(Boolean);
-
+          room.usedScenarios = room.usedScenarios || [];
+          
           room.commentary = room.language === 'AF' ? `Besig om Rondte ${room.round} se uitdaging te bou...` : `Generating Round ${room.round} impossible challenge...`;
-          generateAiChallenge(used, room.language, room.gameMode).then(challenge => {
+          generateAiChallenge(room.usedScenarios, room.language, room.gameMode).then(challenge => {
             room.challenge = challenge;
+            room.usedScenarios.push(challenge.scenario);
             room.commentary = room.language === 'AF' ? `Rondte ${room.round} is aktief! Laat daai breinselle vonk.` : `Round ${room.round} is live! Keep those synapses firing.`;
           });
         }
@@ -1057,6 +1068,7 @@ app.post("/api/room/:code/action", async (req, res) => {
         room.winnerId = null;
         room.commentary = room.language === 'AF' ? "Nuwe wedstryd begin sopas! Skree vir almal om te bly sit." : "New game is starting! Tell everyone to stick around.";
         room.statistics = {};
+        room.usedScenarios = [];
         
         // Zero all scores
         Object.keys(room.players).forEach(pid => {
