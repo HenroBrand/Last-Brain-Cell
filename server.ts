@@ -194,19 +194,21 @@ async function generateAiCommentary(scenario: string, submissionsAndVotes: { nam
     try {
       let prompt = "";
       if (language === 'AF') {
-        prompt = `Jy is die chaotiese, sarkastiese, effens maniese KI-gasheer van 'n partytjiespel genaamd "Last Brain Cell" (Die Laaste Breinsel).
-Die rondte se absurde situasie was: "${scenario}"
-Hier is die snaakse antwoorde wat spelers geskryf het, asook die stemme wat hulle ontvang het:
+        prompt = `Jy is die absolute raserigste, gemeenste en skreeusnaaksste KI-gasheer van die partytjiespel "Last Brain Cell" (Die Laaste Breinsel).
+Enige ordentlikheid is by die venster uit. Jou werk is om die spelers se belaglike en patetiese probeerslae op 'n uiters rowwe en verregaande manier te slegsê (roast), direk gekoppel aan hul spesifieke antwoorde! Moenie terugbehou nie. Maak vlymskerp grappies oor hulle gebrek aan intelligensie en hul slegte sin vir humor.
+Die rondte se absurde uitdaging was: "${scenario}"
+Hier is die spelers se skrywes en stemme:
 ${summaryString}
 
-Skryf 'n vinnige, skreeusnaakse, hoogs vermaaklike enkel-sin kommentaar (maks 150 karakters) heeltemal in AFRIKAANS wat hierdie antwoorde liggies belaglik maak of spot met hoe almal geantwoord het. Moenie enige meta-data of ekstra aanhalingstekens om die algemene sin sit nie. Net die rou Afrikaanse kommentaar self. Skerp en snaaks!`;
+Skryf 'n baie vinnige, beledigende, lag-tot-jy-huil enkelsin kommentaar (maks 150 karakters) heeltemal in AFRIKAANS wat spesifieke antwoorde direk bespot of herinner aan hoe dom hulle is. Geen meta-data of aanhalingstekens om die sin nie! Rou en skokkend skoorsoekerig!`;
       } else {
-        prompt = `You are the chaotic, sarcastic, slightly manic AI host of a browser party game called "Last Brain Cell".
-The round's absurd scenario was: "${scenario}"
-Here are the hilarious submissions written by the human players, along with the votes they received:
+        prompt = `You are the savage, insult-heavy, and hilariously outrageous AI host of the comedy party game "Last Brain Cell".
+Your job is to ROAST the players' replies mercilessly with zero holding back! Be blunt, highly sarcastic, and say truly outrageous, savage things directly referencing specific players and their specific written answers. Make fun of their lack of brain cells, their low-effort vocabulary, or their weird logic. Include brief brain-cell and neural failure puns where possible!
+The round's prompt was: "${scenario}"
+Here are the submissions written by the human players, along with the votes they received:
 ${summaryString}
 
-Write a quick, highly entertaining, single-sentence commentary (max 150 characters) roasting the absurd answers or poking fun at how everyone responded. Keep it sharp, sarcastic, and extremely energetic, like a true Jackbox host. Never print metadata, headers, or quotes around the whole thing. Just the commentary itself. Match the wild party vibe!`;
+Write a quick, highly entertaining, single-sentence commentary (max 150 characters) roast. Act like a cruel stand-up comic or GLaDOS on high-voltage bender. Directly link your roast to the text of what players submitted! Make it outrageous, rude, and brutally funny. Never print metadata, headers, or quotes around the whole thing. Just the raw roast itself. Go wild!`;
       }
 
       const response = await client.models.generateContent({
@@ -1006,7 +1008,9 @@ app.post("/api/room/:code/action", async (req, res) => {
           playerId,
           playerName: player.name,
           emoji: payload.emoji,
-          timestamp: Date.now()
+          timestamp: Date.now(),
+          x: typeof payload.x === "number" ? payload.x : undefined,
+          y: typeof payload.y === "number" ? payload.y : undefined
         };
         room.emojiReactions.push(emojiReaction);
         

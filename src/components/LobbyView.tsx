@@ -24,16 +24,16 @@ const FUNNY_TIPS = [
   "Science confirms that wearing a colander on your head increases comical performance by 12.4%.",
   "If your jokes are failing, claim your keyboard translation was delayed. Or blame the raccoon who wrote the database.",
   "Warning: Extreme laughter might trigger spontaneous brain cell splitting. Proceed at your own comedy risk.",
-  "If your score is low, try whispering sweet coding secrets to the hosting robot.",
-  "Science shows that spelling mistakes make your answer 28% more raserig and chaotic.",
-  "Pressing reaction buttons multiple times increases your CPU's heart-rate. It is completely useless but highly satisfying.",
-  "Spectators are legally permitted to judge others. In fact, it is encouraged by the Intergalactic Committee of Sitcombators.",
+  "Why did the single neuron cross the synapse? To prove it had a faster connection than your dial-up brain.",
+  "You possess exactly two active brain cells right now, and they are currently fighting for third place.",
+  "A synapse walks into a lobby and orders an electrical charge. The bartender shouts, 'We don't serve your potential here!'",
+  "If you feel a brief static shock in your skull, don't worry—that's just your last lonely brain cell trying to ignite a thought.",
+  "My brain cell count is currently so low, it underflowed. I am now legally certified as a decorative kitchen fern.",
   "In case of low brain activity, please restart your central nervous system or consume a delicious savoury tart.",
+  "Is your prefrontal cortex overheating yet? Try blowing gently into your ears to cool down the processor.",
+  "Spectators are legally permitted to judge others. In fact, it is encouraged by the Intergalactic Committee of Sitcombators.",
   "Stuck in writer's block? Close your eyes, think of a massive baked bean, and write the first word that comes to mind.",
-  "The server is powered by a hamster on a treadmill. Please try to make shorter jokes to avoid overheating his little paws.",
-  "According to local guidelines, using more than three punctuation marks in a joke is considered shouting at the algorithm.",
-  "If someone is beating you in points, check under their chair for smuggled dictionaries or miniature joke books.",
-  "Spectatorship is an art form. Make sure to breathe heavily into your virtual microphone to assert dominance."
+  "The server is powered by a hamster on a treadmill. Please try to make shorter jokes to avoid overheating his little paws."
 ];
 
 export default function LobbyView({

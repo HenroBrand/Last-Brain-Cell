@@ -244,8 +244,16 @@ export default function App() {
   const handlePostVote = (votedPlayerId: string) => {
     triggerAction("SUBMIT_VOTE", { votedPlayerId });
   };
-  const handleSendEmoji = (emoji: string) => {
-    triggerAction("REACTION", { emoji });
+  const handleSendEmoji = (emoji: string, event?: React.MouseEvent) => {
+    let x = 10 + Math.random() * 80;
+    let y = 30 + Math.random() * 50;
+    if (event) {
+      const rx = (event.clientX / window.innerWidth) * 100;
+      const ry = (event.clientY / window.innerHeight) * 100;
+      x = Math.max(5, Math.min(95, rx));
+      y = Math.max(5, Math.min(95, ry));
+    }
+    triggerAction("REACTION", { emoji, x, y });
   };
 
   const handleLeaveLobby = () => {
@@ -361,6 +369,7 @@ export default function App() {
             hasVoted={myRecordForVote ? myRecordForVote.votedFor !== null : false}
             onSendEmoji={handleSendEmoji}
             isSpectator={myRecordForVote ? myRecordForVote.isSpectator : false}
+            challenge={roomState.challenge}
           />
         );
       }
@@ -509,8 +518,8 @@ export default function App() {
             <div className="flex items-center justify-around">
               {["🧠", "💥", "😂", "💀", "💩", "🤡", "🎉", "🔥"].map((e) => (
                 <button
-                  onClick={() => {
-                    handleSendEmoji(e);
+                  onClick={(event) => {
+                    handleSendEmoji(e, event);
                   }}
                   key={e}
                   type="button"
@@ -530,12 +539,6 @@ export default function App() {
       {/* Footer warning hints for testing multiplayer locally */}
       <footer className="w-full max-w-2xl mx-auto px-4 py-4 text-center select-none relative z-30 flex flex-col items-center gap-1.5 border-t border-purple-900/10">
         
-        {/* Testing warning hint banner */}
-        <div className="bg-cyan-950/40 border border-cyan-900/50 rounded-2xl p-2 px-3 text-cyan-300 font-bold text-[10px] uppercase tracking-wider flex items-center justify-center gap-1.5 max-w-md">
-          <Info className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-          <span>Multiplayer Tip: Open an incognito tab to easily test with 3 players!</span>
-        </div>
-
         <span className="font-mono text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">
           Last Brain Cell © 2026 | Created by Henro Brand
         </span>

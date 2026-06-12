@@ -16,6 +16,7 @@ interface FloatingItem {
   emoji: string;
   sender: string;
   left: number;
+  top: number;
 }
 
 export default function FloatingEmojis({ emojis }: FloatingEmojisProps) {
@@ -36,21 +37,23 @@ export default function FloatingEmojis({ emojis }: FloatingEmojisProps) {
       if (!seenIdsRef.current.has(uniqueId) && isPostMount) {
         seenIdsRef.current.add(uniqueId);
         
-        // Generate a stable visual offset based on the uniqueId string
+        // Generate stable visual offset if remote coordinates of sender are missing
         const hash = uniqueId.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
-        const stableLeft = 8 + (hash % 84);
+        const stableLeft = typeof e.x === "number" ? e.x : (10 + (hash % 80));
+        const stableTop = typeof e.y === "number" ? e.y : (30 + (hash % 50));
 
         newItems.push({
           id: uniqueId,
           emoji: e.emoji,
           sender: e.playerName,
-          left: stableLeft
+          left: stableLeft,
+          top: stableTop
         });
 
-        // Auto-remove this specific item after 1.5 seconds when its visual animation is complete
+        // Auto-remove this specific item after 3.2 seconds when its visual animation is complete
         setTimeout(() => {
           setItems((prev) => prev.filter((item) => item.id !== uniqueId));
-        }, 1500);
+        }, 3200);
       }
     });
 
@@ -61,24 +64,24 @@ export default function FloatingEmojis({ emojis }: FloatingEmojisProps) {
 
   // Clean elements list
   return (
-    <div className="fixed inset-x-0 bottom-4 pointer-events-none z-50 overflow-hidden h-32">
+    <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden w-screen h-screen">
       <AnimatePresence>
         {items.map((item) => (
           <motion.div
             key={item.id}
-            initial={{ y: 50, opacity: 0, scale: 0.6 }}
+            initial={{ y: 20, opacity: 0, scale: 0.6 }}
             animate={{
-              y: 0,
-              opacity: [0, 1, 1, 0],
-              scale: [0.8, 1.1, 1, 0.9],
+              y: -50,
+              opacity: [0, 1, 1, 0.7, 0],
+              scale: [0.8, 1.25, 1, 0.9],
               x: [0, Math.sin(item.left) * 15, -Math.sin(item.left) * 15]
             }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 1.2, ease: "easeOut" }}
-            style={{ left: `${item.left}%` }}
-            className="absolute bottom-1 flex flex-col items-center pointer-events-none"
+            transition={{ duration: 3.0, ease: "easeOut" }}
+            style={{ left: `${item.left}%`, top: `${item.top}%` }}
+            className="absolute flex flex-col items-center pointer-events-none"
           >
-            <div className="flex flex-col items-center gap-0.5 pointer-events-none drop-shadow-md">
+            <div className="flex flex-col items-center gap-0.5 pointer-events-none drop-shadow-[0_4px_6px_rgba(0,0,0,0.4)]">
               <span className="text-3xl select-none leading-none">{item.emoji}</span>
               <span className="text-[8px] text-white px-1 py-0.2 rounded bg-black/75 font-black tracking-wide uppercase select-none leading-none">
                 {item.sender}

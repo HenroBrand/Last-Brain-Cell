@@ -73,4 +73,6 @@ export interface EmojiBroadcast {
   playerName: string;
   emoji: string;
   timestamp: number;
+  x?: number;
+  y?: number;
 }

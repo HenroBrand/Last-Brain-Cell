@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { Clock, ThumbsUp, AlertTriangle, MessageCircle } from "lucide-react";
-import { RoundAnswer, Player } from "../types.js";
+import { RoundAnswer, Player, Challenge } from "../types.js";
 import { soundSynthesizer } from "../utils/audio.js";
 
 interface VotingViewProps {
@@ -16,8 +16,9 @@ interface VotingViewProps {
   timerDuration: number;
   onPostVote: (votedPlayerId: string) => void;
   hasVoted: boolean;
-  onSendEmoji: (emoji: string) => void;
+  onSendEmoji: (emoji: string, event?: React.MouseEvent) => void;
   isSpectator?: boolean;
+  challenge: Challenge | null;
 }
 
 const COLORS = [
@@ -38,7 +39,8 @@ export default function VotingView({
   onPostVote,
   hasVoted,
   onSendEmoji,
-  isSpectator = false
+  isSpectator = false,
+  challenge
 }: VotingViewProps) {
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
 
@@ -85,6 +87,20 @@ export default function VotingView({
           <p className="text-xs font-bold text-gray-700 leading-normal mt-1.5">
             You are currently a spectator! You can't cast candidate votes, but you can spam REACTION EMOJIS below to intimidate players!
           </p>
+        </div>
+      )}
+
+      {challenge && (
+        <div className="bg-amber-100 border-4 border-black p-5 rounded-2xl w-full text-center shadow-retro mb-6 text-black select-none relative">
+          <span className="absolute -top-4 left-1/2 transform -translate-x-1/2 text-[10px] font-black bg-amber-500 text-black border-2 border-black px-4 py-1 rounded-lg uppercase shadow-[2px_2px_0px_#000] whitespace-nowrap">
+            THE ABSURD CHALLENGE PROMPT
+          </span>
+          <p className="text-xs font-black text-amber-700 tracking-wider uppercase mb-1">
+            Category: {challenge.category}
+          </p>
+          <blockquote className="text-md font-black leading-relaxed mt-2 font-sans italic">
+            "{challenge.scenario}"
+          </blockquote>
         </div>
       )}
 
@@ -153,8 +169,8 @@ export default function VotingView({
         <div className="flex items-center justify-around mt-1">
           {EMOJIS.map((e) => (
             <button
-              onClick={() => {
-                onSendEmoji(e);
+              onClick={(event) => {
+                onSendEmoji(e, event);
               }}
               key={e}
               type="button"
